@@ -4,118 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dragomir - Modern Theme</title>
+    <!-- Tailwind CSS CDN for simplified styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Custom font import for a cleaner look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
         body {
-            background: linear-gradient(135deg, #0e0e0e 0%, #1a1a1a 100%);
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden; /* Hide anything that goes beyond the viewport */
+            font-family: 'Inter', sans-serif;
             position: relative;
+            overflow: hidden; /* Prevent animated background from causing scrollbars */
+        }
+        
+        /* Animated Background Glow Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 150vw;
+            height: 150vw;
+            background: radial-gradient(circle, rgba(100, 100, 100, 0.1), transparent 70%);
+            transform: translate(-50%, -50%) rotate(0deg);
+            animation: bg-rotate 45s linear infinite;
+            z-index: -1;
         }
 
-        .container {
-            text-align: center;
-            z-index: 10; /* Ensure text is above background elements */
-            position: relative;
+        @keyframes bg-rotate {
+            from {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
         }
 
-        .title {
-            font-size: 6rem;
-            font-weight: bold;
-            letter-spacing: -5px;
-            text-transform: uppercase;
-            text-shadow: 0 0 20px rgba(0, 255, 255, 0.4), 0 0 40px rgba(0, 255, 255, 0.2); /* Subtle glow */
+        /* Title Glow Animation */
+        .title-glow {
+            animation: pulse-glow 3s infinite alternate ease-in-out;
         }
 
-        /* Abstract Background Elements */
-        .bg-shape {
-            position: absolute;
-            background-color: rgba(30, 30, 30, 0.7); /* Slightly lighter than background, semi-transparent */
-            border-radius: 50%;
-            filter: blur(80px); /* Soft blur */
-            opacity: 0.7;
-            animation: floatAndFade 20s infinite ease-in-out;
-            z-index: 1;
+        @keyframes pulse-glow {
+            from {
+                text-shadow: 0 0 10px rgba(200, 200, 200, 0.6), 0 0 20px rgba(200, 200, 200, 0.4);
+            }
+            to {
+                text-shadow: 0 0 20px rgba(200, 200, 200, 0.8), 0 0 40px rgba(200, 200, 200, 0.6);
+            }
         }
-
-        .bg-shape:nth-child(1) {
-            width: 300px;
-            height: 300px;
-            top: -5%;
-            left: -5%;
-            background-color: rgba(0, 150, 255, 0.1); /* Blue glow */
-            animation-delay: 0s;
-        }
-
-        .bg-shape:nth-child(2) {
-            width: 400px;
-            height: 400px;
-            bottom: -10%;
-            right: -10%;
-            background-color: rgba(255, 0, 150, 0.1); /* Pink glow */
-            animation-delay: 5s;
-        }
-
-        .bg-shape:nth-child(3) {
-            width: 250px;
-            height: 250px;
-            top: 20%;
-            right: 15%;
-            background-color: rgba(0, 255, 150, 0.1); /* Green glow */
-            animation-delay: 10s;
-        }
-
-        .bg-shape:nth-child(4) {
-            width: 350px;
-            height: 350px;
-            bottom: 25%;
-            left: 10%;
-            background-color: rgba(255, 150, 0, 0.1); /* Orange glow */
-            animation-delay: 15s;
-        }
-
-        @keyframes floatAndFade {
-            0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
-            25% { transform: translate(20px, -20px) scale(1.05); opacity: 0.8; }
-            50% { transform: translate(0, 0) scale(1); opacity: 0.7; }
-            75% { transform: translate(-20px, 20px) scale(0.95); opacity: 0.6; }
-            100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
-        }
-
-        /* Subtle Grid Pattern (optional, comment out if not desired) */
-        .grid-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image:
-                linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
-            opacity: 0.3;
-            z-index: 5;
-        }
-
     </style>
 </head>
-<body>
+<body class="bg-gray-950 text-white min-h-screen flex items-center justify-center p-4">
 
-    <div class="bg-shape"></div>
-    <div class="bg-shape"></div>
-    <div class="bg-shape"></div>
-    <div class="bg-shape"></div>
-    <div class="grid-overlay"></div>
+    <!-- Main container for all content, centered and responsive -->
+    <div class="text-center">
 
-    <div class="container">
-        <h1 class="title">Dragomir</h1>
+        <!-- Responsive title with a pulsing glow animation -->
+        <h1 class="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-4 text-gray-300 title-glow">
+            Dragomir
+        </h1>
+
     </div>
 
 </body>
-
 </html>
