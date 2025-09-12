@@ -243,27 +243,29 @@
         // Update every second
         setInterval(updateDisplay, 1000);
 
-        // === Weather API ===
         async function fetchWeather() {
-            const apiKey = '1952b5b2ad593e50564dfebde5f03ea6'; // Replace with your OpenWeatherMap API key
-            const city = 'Northampton';
-            const countryCode = 'GB';
-            const url = `https://api.openweathermap.org/data/2.5/weather?q=${city},${countryCode}&appid=${apiKey}&units=metric`;
+    // Coordinates for Northampton, UK
+    const lat = 52.2319; 
+    const lon = -0.8954; 
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
 
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error('Weather data not available.');
-                }
-                const data = await response.json();
-                const temp = Math.round(data.main.temp);
-                const description = data.weather[0].description;
-                document.getElementById('weather-info').textContent = `Weather: ${temp}°C, ${description}`;
-            } catch (error) {
-                console.error("Could not fetch weather:", error);
-                document.getElementById('weather-info').textContent = 'Weather data unavailable';
-            }
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Weather data not available.');
         }
+        const data = await response.json();
+        
+        // Open-Meteo returns a "weathercode" that we can use to get the description.
+        // For a simple display, we'll just show the temperature.
+        const temp = Math.round(data.current_weather.temperature);
+        
+        document.getElementById('weather-info').textContent = `Weather: ${temp}°C`;
+    } catch (error) {
+        console.error("Could not fetch weather:", error);
+        document.getElementById('weather-info').textContent = 'Weather data unavailable';
+    }
+}
 
         // Fetch weather on load
         fetchWeather();
@@ -297,3 +299,4 @@
 
 </body>
 </html>
+
