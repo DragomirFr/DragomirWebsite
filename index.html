@@ -13,6 +13,7 @@
             font-family: 'Inter', sans-serif;
             position: relative;
             overflow: hidden; /* Prevent animated background from causing scrollbars */
+            background: #000; /* Fallback for older browsers */
         }
         
         /* Animated Background Glow Effect */
@@ -38,6 +39,116 @@
             }
         }
 
+        /* Subtle Animated Circles Background */
+        .circles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -2;
+        }
+
+        .circles li {
+            position: absolute;
+            display: block;
+            list-style: none;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            animation: animate-circles 25s linear infinite;
+            bottom: -150px;
+        }
+
+        .circles li:nth-child(1) {
+            left: 25%;
+            width: 80px;
+            height: 80px;
+            animation-delay: 0s;
+        }
+
+        .circles li:nth-child(2) {
+            left: 10%;
+            width: 20px;
+            height: 20px;
+            animation-delay: 2s;
+            animation-duration: 12s;
+        }
+
+        .circles li:nth-child(3) {
+            left: 70%;
+            width: 20px;
+            height: 20px;
+            animation-delay: 4s;
+        }
+
+        .circles li:nth-child(4) {
+            left: 40%;
+            width: 60px;
+            height: 60px;
+            animation-delay: 0s;
+            animation-duration: 18s;
+        }
+
+        .circles li:nth-child(5) {
+            left: 65%;
+            width: 20px;
+            height: 20px;
+            animation-delay: 0s;
+        }
+
+        .circles li:nth-child(6) {
+            left: 75%;
+            width: 110px;
+            height: 110px;
+            animation-delay: 3s;
+        }
+
+        .circles li:nth-child(7) {
+            left: 35%;
+            width: 150px;
+            height: 150px;
+            animation-delay: 7s;
+        }
+
+        .circles li:nth-child(8) {
+            left: 50%;
+            width: 25px;
+            height: 25px;
+            animation-delay: 15s;
+            animation-duration: 45s;
+        }
+
+        .circles li:nth-child(9) {
+            left: 20%;
+            width: 15px;
+            height: 15px;
+            animation-delay: 2s;
+            animation-duration: 35s;
+        }
+
+        .circles li:nth-child(10) {
+            left: 85%;
+            width: 150px;
+            height: 150px;
+            animation-delay: 0s;
+            animation-duration: 11s;
+        }
+
+        @keyframes animate-circles {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+                border-radius: 0;
+            }
+            100% {
+                transform: translateY(-1000px) rotate(720deg);
+                opacity: 0;
+                border-radius: 50%;
+            }
+        }
+
         /* Title Glow Animation */
         .title-glow {
             animation: pulse-glow 3s infinite alternate ease-in-out;
@@ -55,6 +166,19 @@
 </head>
 <body class="bg-gray-950 text-white min-h-screen flex items-center justify-center p-4">
 
+    <ul class="circles">
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+    </ul>
+
     <div class="text-center">
 
         <h1 class="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-4 text-gray-300 title-glow">
@@ -67,17 +191,24 @@
             </div>
             
             <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest">
-                <span id="nyc-time"></span>
-            </div>
-
-            <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest pt-2 border-t border-gray-700 mt-4">
                 <span id="date"></span>
             </div>
-        </div>
 
+            <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest mt-4 pt-2 border-t border-gray-700">
+                <span id="weather-info"></span>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-gray-700">
+                <blockquote class="text-lg italic text-gray-300">
+                    <p class="mb-2" id="quote-text"></p>
+                    <footer class="text-sm text-gray-500 not-italic" id="quote-author"></footer>
+                </blockquote>
+            </div>
+        </div>
     </div>
 
     <script>
+        // === Time and Date Functions ===
         function updateDisplay() {
             const now = new Date();
 
@@ -100,7 +231,6 @@
             timeOptions.timeZone = 'Europe/London';
             const ukTime = now.toLocaleTimeString('en-GB', timeOptions);
             document.getElementById('uk-time').textContent = ukTime + ' UK Time';
-            
 
             // Current Date
             const formattedDate = now.toLocaleDateString('en-GB', dateOptions);
@@ -112,8 +242,58 @@
 
         // Update every second
         setInterval(updateDisplay, 1000);
+
+        // === Weather API ===
+        async function fetchWeather() {
+            const apiKey = '1952b5b2ad593e50564dfebde5f03ea6'; // Replace with your OpenWeatherMap API key
+            const city = 'Northampton';
+            const countryCode = 'GB';
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${city},${countryCode}&appid=${apiKey}&units=metric`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Weather data not available.');
+                }
+                const data = await response.json();
+                const temp = Math.round(data.main.temp);
+                const description = data.weather[0].description;
+                document.getElementById('weather-info').textContent = `Weather: ${temp}°C, ${description}`;
+            } catch (error) {
+                console.error("Could not fetch weather:", error);
+                document.getElementById('weather-info').textContent = 'Weather data unavailable';
+            }
+        }
+
+        // Fetch weather on load
+        fetchWeather();
+
+        // You might want to update this less frequently, e.g., every 10 minutes
+        setInterval(fetchWeather, 600000); // 600000 ms = 10 minutes
+
+        // === Daily Quote API ===
+        async function fetchDailyQuote() {
+            // Using a simple, free API for random quotes
+            const url = 'https://api.quotable.io/random';
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Quote data not available.');
+                }
+                const data = await response.json();
+                document.getElementById('quote-text').textContent = `"${data.content}"`;
+                document.getElementById('quote-author').textContent = `- ${data.author}`;
+            } catch (error) {
+                console.error("Could not fetch quote:", error);
+                document.getElementById('quote-text').textContent = '“The only way to do great work is to love what you do.”';
+                document.getElementById('quote-author').textContent = '- Steve Jobs';
+            }
+        }
+
+        // Fetch a new quote on load
+        fetchDailyQuote();
     </script>
 
 </body>
 </html>
-
