@@ -101,10 +101,6 @@
             const ukTime = now.toLocaleTimeString('en-GB', timeOptions);
             document.getElementById('uk-time').textContent = ukTime + ' UK Time';
             
-            // NYC Time
-            timeOptions.timeZone = 'America/New_York';
-            const nycTime = now.toLocaleTimeString('en-US', timeOptions);
-            document.getElementById('nyc-time').textContent = nycTime + ' NYC Time';
 
             // Current Date
             const formattedDate = now.toLocaleDateString('en-GB', dateOptions);
@@ -120,3 +116,4 @@
 
 </body>
 </html>
+
