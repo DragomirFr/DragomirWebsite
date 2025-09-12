@@ -64,41 +64,34 @@
         <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest mt-2">
             <span id="uk-time"></span>
         </div>
-        
-        <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest mt-1">
-            <span id="nyc-time"></span>
-        </div>
 
     </div>
 
     <script>
-        function updateTimes() {
+        function updateUKTime() {
             // Create a new Date object
             const now = new Date();
 
-            // Options for formatting the time
+            // Options for formatting the time to show UK time
             const options = {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',
+                timeZone: 'Europe/London' // Set the time zone to UK (London)
             };
 
-            // UK Time
-            options.timeZone = 'Europe/London';
+            // Format the time using toLocaleTimeString with the specified options
             const ukTime = now.toLocaleTimeString('en-GB', options);
+
+            // Update the HTML element with the formatted time
             document.getElementById('uk-time').textContent = ukTime + ' UK Time';
-            
-            // NYC Time
-            options.timeZone = 'America/New_York';
-            const nycTime = now.toLocaleTimeString('en-US', options);
-            document.getElementById('nyc-time').textContent = nycTime + ' NYC Time';
         }
 
         // Call the function to display the time immediately
-        updateTimes();
+        updateUKTime();
 
         // Update the time every second
-        setInterval(updateTimes, 1000);
+        setInterval(updateUKTime, 1000);
     </script>
 
 </body>
