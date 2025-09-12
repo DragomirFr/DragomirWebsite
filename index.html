@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dragomir - Modern Theme</title>
-    <!-- Tailwind CSS CDN for simplified styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom font import for a cleaner look */
@@ -56,15 +55,44 @@
 </head>
 <body class="bg-gray-950 text-white min-h-screen flex items-center justify-center p-4">
 
-    <!-- Main container for all content, centered and responsive -->
     <div class="text-center">
 
-        <!-- Responsive title with a pulsing glow animation -->
         <h1 class="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-4 text-gray-300 title-glow">
             Dragomir
         </h1>
+        
+        <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest mt-2">
+            <span id="uk-time"></span>
+        </div>
 
     </div>
+
+    <script>
+        function updateUKTime() {
+            // Create a new Date object
+            const now = new Date();
+
+            // Options for formatting the time to show UK time
+            const options = {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZone: 'Europe/London' // Set the time zone to UK (London)
+            };
+
+            // Format the time using toLocaleTimeString with the specified options
+            const ukTime = now.toLocaleTimeString('en-GB', options);
+
+            // Update the HTML element with the formatted time
+            document.getElementById('uk-time').textContent = ukTime + ' UK Time';
+        }
+
+        // Call the function to display the time immediately
+        updateUKTime();
+
+        // Update the time every second
+        setInterval(updateUKTime, 1000);
+    </script>
 
 </body>
 </html>
