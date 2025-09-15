@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dragomir - Modern Theme</title>
+    <title>Dragomir - </title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom font import for a cleaner look */
@@ -271,7 +271,7 @@
         fetchWeather();
 
         // You might want to update this less frequently, e.g., every 10 minutes
-        setInterval(fetchWeather, 600000); // 600000 ms = 10 minutes
+        setInterval(fetchWeather, 1000); // 600000 ms = 10 minutes
 
         // === Daily Quote API ===
         async function fetchDailyQuote() {
@@ -288,8 +288,8 @@
                 document.getElementById('quote-author').textContent = `- ${data.author}`;
             } catch (error) {
                 console.error("Could not fetch quote:", error);
-                document.getElementById('quote-text').textContent = '“The only way to do great work is to love what you do.”';
-                document.getElementById('quote-author').textContent = '- Steve Jobs';
+                document.getElementById('quote-text').textContent = '“You miss 100% of the shots you dont take.”';
+                document.getElementById('quote-author').textContent = '- Dragomir Melnic';
             }
         }
 
@@ -299,4 +299,5 @@
 
 </body>
 </html>
+
 
