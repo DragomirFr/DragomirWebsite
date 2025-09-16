@@ -1,173 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dragomir</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+    /* Animated gradient background */
     body {
-      font-family: 'Inter', sans-serif;
-      margin: 0;
-      padding: 0;
-      color: white;
-      background: black;
-      overflow: hidden;
+      background: linear-gradient(-45deg, #1e3a8a, #2563eb, #9333ea, #f43f5e);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
     }
-
-    /* Starfield Background */
-    .stars {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      z-index: -1;
-      overflow: hidden;
-    }
-
-    .star {
-      position: absolute;
-      width: 2px;
-      height: 2px;
-      background: white;
-      opacity: 0.8;
-      border-radius: 50%;
-      animation: twinkle 5s infinite alternate;
-    }
-
-    @keyframes twinkle {
-      from { opacity: 0.2; transform: scale(0.8); }
-      to { opacity: 1; transform: scale(1.3); }
-    }
-
-    /* Title Glow */
-    .title-glow {
-      animation: glowPulse 3s infinite alternate ease-in-out;
-    }
-
-    @keyframes glowPulse {
-      from { text-shadow: 0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.2); }
-      to { text-shadow: 0 0 25px rgba(255,255,255,0.8), 0 0 50px rgba(255,255,255,0.6); }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-6 text-center">
+<body class="flex flex-col items-center justify-center min-h-screen text-white text-center p-6">
 
-  <!-- Starfield -->
-  <div class="stars" id="stars"></div>
+  <!-- Time -->
+  <div id="uk-time" class="text-4xl font-bold"></div>
+  <!-- Date -->
+  <div id="date" class="text-lg mt-2"></div>
 
-  <!-- Content -->
-  <div>
-    <h1 class="text-6xl md:text-8xl font-black uppercase mb-6 title-glow">
-      Dragomir
-    </h1>
+  <!-- Weather -->
+  <div id="weather-info" class="text-xl mt-6"></div>
 
-    <div class="space-y-3">
-      <div class="text-gray-300 text-sm md:text-base uppercase tracking-widest">
-        <span id="uk-time"></span>
-      </div>
-
-      <div class="text-gray-300 text-sm md:text-base uppercase tracking-widest">
-        <span id="date"></span>
-      </div>
-
-      <div class="text-lg font-semibold text-gray-200 mt-4 pt-2 border-t border-gray-700">
-        <span id="weather-info"></span>
-      </div>
-
-      <div class="mt-6 pt-4 border-t border-gray-700 max-w-xl mx-auto">
-        <blockquote class="text-lg italic text-gray-200">
-          <p class="mb-2" id="quote-text"></p>
-          <footer class="text-sm text-gray-400 not-italic" id="quote-author"></footer>
-        </blockquote>
-      </div>
-    </div>
+  <!-- Quote -->
+  <div class="mt-8 max-w-xl">
+    <p id="quote-text" class="italic text-lg"></p>
+    <p id="quote-author" class="mt-2 text-sm"></p>
   </div>
 
   <script>
-    // === Starfield ===
-    const starsContainer = document.getElementById("stars");
-    for (let i = 0; i < 100; i++) {
-      const star = document.createElement("div");
-      star.classList.add("star");
-      star.style.top = Math.random() * 100 + "%";
-      star.style.left = Math.random() * 100 + "%";
-      star.style.animationDuration = (3 + Math.random() * 4) + "s";
-      starsContainer.appendChild(star);
-    }
-
-    // === Time & Date ===
+    // === Time and Date ===
     function updateDisplay() {
       const now = new Date();
+
+      // Time
       const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/London' };
+      const ukTime = now.toLocaleTimeString('en-GB', timeOptions);
+      document.getElementById('uk-time').textContent = ukTime + ' UK Time';
+
+      // Date
       const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      document.getElementById('uk-time').textContent = now.toLocaleTimeString('en-GB', timeOptions) + ' UK Time';
-      document.getElementById('date').textContent = now.toLocaleDateString('en-GB', dateOptions);
+      const formattedDate = now.toLocaleDateString('en-GB', dateOptions);
+      document.getElementById('date').textContent = formattedDate;
     }
     updateDisplay();
     setInterval(updateDisplay, 1000);
 
     // === Weather ===
     async function fetchWeather() {
-      const lat = 52.2319, lon = -0.8954; // Northampton
+      const lat = 52.2319; // Northampton
+      const lon = -0.8954;
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+
       try {
         const response = await fetch(url);
         if (!response.ok) throw new Error("Weather unavailable");
         const data = await response.json();
-        const w = data.current_weather;
+        const weather = data.current_weather;
 
-        const weatherMap = {
-          0: "Clear ☀️",
-          1: "Mainly clear 🌤️",
-          2: "Partly cloudy ⛅",
-          3: "Overcast ☁️",
-          45: "Fog 🌫️",
-          48: "Rime fog 🌫️",
-          51: "Light drizzle 🌦️",
-          53: "Drizzle 🌧️",
-          55: "Heavy drizzle 🌧️",
-          61: "Light rain 🌧️",
-          63: "Rain 🌧️",
-          65: "Heavy rain ⛈️",
-          71: "Light snow 🌨️",
-          73: "Snow 🌨️",
-          75: "Heavy snow ❄️",
-          95: "Thunderstorm ⛈️",
-          96: "Thunderstorm w/ hail ⛈️"
+        const codes = {
+          0: "Clear",
+          1: "Mainly clear",
+          2: "Partly cloudy",
+          3: "Overcast",
+          45: "Fog",
+          48: "Fog",
+          51: "Drizzle",
+          53: "Drizzle",
+          55: "Drizzle",
+          61: "Rain",
+          63: "Rain",
+          65: "Heavy rain",
+          71: "Snow",
+          73: "Snow",
+          75: "Snow",
+          95: "Thunderstorm",
+          96: "Thunderstorm",
+          99: "Thunderstorm"
         };
 
-        const desc = weatherMap[w.weathercode] || "Unknown";
-        const temp = Math.round(w.temperature);
+        const desc = codes[weather.weathercode] || "Unknown";
+        const temp = Math.round(weather.temperature);
 
-        document.getElementById('weather-info').textContent = `${temp}°C, ${desc}`;
+        document.getElementById('weather-info').textContent = 
+          `Northampton: ${temp}°C, ${desc}`;
       } catch (err) {
         console.error(err);
         document.getElementById('weather-info').textContent = "Weather data unavailable";
       }
     }
     fetchWeather();
-    setInterval(fetchWeather, 600000); // every 10 mins
+    setInterval(fetchWeather, 600000); // every 10 min
 
-    // === Daily Quote ===
+    // === Quotes ===
     async function fetchDailyQuote() {
-      const url = "https://api.quotable.io/random";
+      const url = "https://zenquotes.io/api/random";
       try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Quote unavailable");
-        const data = await res.json();
-        document.getElementById('quote-text').textContent = `"${data.content}"`;
-        document.getElementById('quote-author').textContent = `- ${data.author}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Quote unavailable");
+        const data = await response.json();
+        document.getElementById('quote-text').textContent = `"${data[0].q}"`;
+        document.getElementById('quote-author').textContent = `- ${data[0].a}`;
       } catch (err) {
         console.error(err);
-        document.getElementById('quote-text').textContent = "“It's not over until I win!”";
+        document.getElementById('quote-text').textContent = `"It's not over until I win!"`;
         document.getElementById('quote-author').textContent = "- Eesah Litt";
       }
     }
     fetchDailyQuote();
-    setInterval(fetchDailyQuote, 1800000); // every 30 mins
+    setInterval(fetchDailyQuote, 1800000); // every 30 min
   </script>
-
 </body>
 </html>
