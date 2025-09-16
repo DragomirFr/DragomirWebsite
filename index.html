@@ -7,75 +7,46 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-
     body {
       font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
-      overflow: hidden;
       color: white;
+      background: black;
+      overflow: hidden;
     }
 
-    /* Animated gradient background */
-    body::before {
-      content: "";
+    /* Starfield Background */
+    .stars {
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: linear-gradient(270deg, #1e1e2f, #0f2027, #2c5364, #1c1c2c);
-      background-size: 800% 800%;
-      animation: gradientShift 30s ease infinite;
-      z-index: -3;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      z-index: -1;
+      overflow: hidden;
     }
 
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    /* Glowing Orbs */
-    .orb {
+    .star {
       position: absolute;
+      width: 2px;
+      height: 2px;
+      background: white;
+      opacity: 0.8;
       border-radius: 50%;
-      opacity: 0.15;
-      filter: blur(80px);
-      animation: floatOrb 20s infinite ease-in-out;
-      z-index: -2;
+      animation: twinkle 5s infinite alternate;
     }
 
-    .orb:nth-child(1) {
-      width: 400px; height: 400px;
-      background: #00f0ff;
-      top: 20%; left: 10%;
-      animation-delay: 0s;
-    }
-
-    .orb:nth-child(2) {
-      width: 300px; height: 300px;
-      background: #ff0080;
-      top: 60%; left: 70%;
-      animation-delay: 5s;
-    }
-
-    .orb:nth-child(3) {
-      width: 500px; height: 500px;
-      background: #00ff85;
-      top: 80%; left: 30%;
-      animation-delay: 10s;
-    }
-
-    @keyframes floatOrb {
-      0%, 100% { transform: translateY(0) translateX(0); }
-      50% { transform: translateY(-60px) translateX(40px); }
+    @keyframes twinkle {
+      from { opacity: 0.2; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1.3); }
     }
 
     /* Title Glow */
     .title-glow {
-      animation: pulse-glow 3s infinite alternate ease-in-out;
+      animation: glowPulse 3s infinite alternate ease-in-out;
     }
 
-    @keyframes pulse-glow {
+    @keyframes glowPulse {
       from { text-shadow: 0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.2); }
       to { text-shadow: 0 0 25px rgba(255,255,255,0.8), 0 0 50px rgba(255,255,255,0.6); }
     }
@@ -83,10 +54,8 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-6 text-center">
 
-  <!-- Background Orbs -->
-  <div class="orb"></div>
-  <div class="orb"></div>
-  <div class="orb"></div>
+  <!-- Starfield -->
+  <div class="stars" id="stars"></div>
 
   <!-- Content -->
   <div>
@@ -103,7 +72,7 @@
         <span id="date"></span>
       </div>
 
-      <div class="text-gray-300 text-sm md:text-base uppercase tracking-widest mt-4 pt-2 border-t border-gray-700">
+      <div class="text-lg font-semibold text-gray-200 mt-4 pt-2 border-t border-gray-700">
         <span id="weather-info"></span>
       </div>
 
@@ -117,13 +86,22 @@
   </div>
 
   <script>
+    // === Starfield ===
+    const starsContainer = document.getElementById("stars");
+    for (let i = 0; i < 100; i++) {
+      const star = document.createElement("div");
+      star.classList.add("star");
+      star.style.top = Math.random() * 100 + "%";
+      star.style.left = Math.random() * 100 + "%";
+      star.style.animationDuration = (3 + Math.random() * 4) + "s";
+      starsContainer.appendChild(star);
+    }
+
     // === Time & Date ===
     function updateDisplay() {
       const now = new Date();
-
       const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/London' };
       const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-
       document.getElementById('uk-time').textContent = now.toLocaleTimeString('en-GB', timeOptions) + ' UK Time';
       document.getElementById('date').textContent = now.toLocaleDateString('en-GB', dateOptions);
     }
@@ -134,7 +112,6 @@
     async function fetchWeather() {
       const lat = 52.2319, lon = -0.8954; // Northampton
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
-
       try {
         const response = await fetch(url);
         if (!response.ok) throw new Error("Weather unavailable");
@@ -142,7 +119,7 @@
         const w = data.current_weather;
 
         const weatherMap = {
-          0: "Clear sky ☀️",
+          0: "Clear ☀️",
           1: "Mainly clear 🌤️",
           2: "Partly cloudy ⛅",
           3: "Overcast ☁️",
@@ -163,10 +140,8 @@
 
         const desc = weatherMap[w.weathercode] || "Unknown";
         const temp = Math.round(w.temperature);
-        const wind = Math.round(w.windspeed);
 
-        document.getElementById('weather-info').textContent =
-          `Northampton: ${desc}, ${temp}°C, Wind ${wind} km/h`;
+        document.getElementById('weather-info').textContent = `${temp}°C, ${desc}`;
       } catch (err) {
         console.error(err);
         document.getElementById('weather-info').textContent = "Weather data unavailable";
