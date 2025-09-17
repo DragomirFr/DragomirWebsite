@@ -1,111 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dragomir Python Editor</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
-
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      background-color: #0f0f0f;
-      color: white;
-      overflow: hidden;
-    }
-
-    /* Terminal output */
-    #output {
-      background-color: #111;
-      padding: 15px;
-      font-family: 'Fira Code', monospace;
-      font-size: 14px;
-      border-radius: 8px;
-      height: 300px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-    }
-
-    /* Editor container */
-    .editor-container {
-      height: 400px;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    /* Glowing button */
-    .run-btn {
-      background: linear-gradient(90deg, #ff416c, #ff4b2b);
-      padding: 10px 20px;
-      font-weight: 600;
-      border-radius: 6px;
-      transition: 0.3s;
-    }
-    .run-btn:hover {
-      filter: brightness(1.2);
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dragomir Python IDE</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Fira+Code&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Poppins', sans-serif; background-color: #0f0f0f; color: #fff; overflow: hidden; }
+  header { background-color: #111; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+  header h1 { font-weight: 800; font-size: 1.5rem; }
+  .tabs button { font-weight: 600; padding: 6px 12px; border-radius: 6px 6px 0 0; }
+  .tabs button.active { background: #1f1f1f; color: #ff416c; }
+  .editor-container { height: 60vh; border-radius: 8px; overflow: hidden; }
+  #output { background-color: #111; padding: 15px; font-family: 'Fira Code', monospace; font-size: 14px; border-radius: 0 0 8px 8px; height: 30vh; overflow-y: auto; white-space: pre-wrap; }
+  .run-btn { background: linear-gradient(90deg, #ff416c, #ff4b2b); padding: 10px 20px; font-weight: 600; border-radius: 6px; transition: 0.3s; }
+  .run-btn:hover { filter: brightness(1.2); }
+  .split { display: flex; flex-direction: column; height: calc(100vh - 70px); gap: 8px; max-width: 1200px; margin: 0 auto; }
+</style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-6 space-y-6">
+<body class="flex flex-col">
 
-  <h1 class="text-5xl font-extrabold text-gray-300 mb-4">Dragomir Python Editor</h1>
+<header>
+  <h1>Dragomir Python IDE</h1>
+  <button id="runBtn" class="run-btn">Run Code</button>
+</header>
 
-  <!-- Editor -->
-  <div class="w-full max-w-4xl editor-container mb-4">
-    <div id="editor" class="h-full"></div>
+<div class="split">
+  <!-- Tabs -->
+  <div class="tabs flex space-x-2 px-2">
+    <button class="active" data-tab="main">main.py</button>
+    <button data-tab="helper">helper.py</button>
   </div>
 
-  <!-- Run button -->
-  <button id="runBtn" class="run-btn text-white mb-4">Run Code</button>
+  <!-- Editor container -->
+  <div id="editorContainer" class="editor-container"></div>
 
   <!-- Output terminal -->
-  <div class="w-full max-w-4xl">
-    <div id="output" class="shadow-lg"></div>
-  </div>
+  <div id="output"></div>
+</div>
 
-  <!-- CodeMirror 6 -->
-  <script type="module">
-    import {EditorState, basicSetup} from "https://cdn.jsdelivr.net/npm/@codemirror/basic-setup@6.2.0/dist/index.js";
-    import {EditorView} from "https://cdn.jsdelivr.net/npm/@codemirror/view@6.4.0/dist/index.js";
-    import {python} from "https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.1.0/dist/index.js";
-    import {oneDark} from "https://cdn.jsdelivr.net/npm/@codemirror/theme-one-dark@6.2.0/dist/index.js";
+<!-- Pyodide -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
 
-    const editor = new EditorView({
-      state: EditorState.create({
-        doc: `# Write your Python code here\nprint("Hello from Dragomir Editor!")`,
-        extensions: [basicSetup, python(), oneDark]
-      }),
-      parent: document.getElementById('editor')
-    });
+<!-- CodeMirror 6 -->
+<script type="module">
+import {EditorState, basicSetup} from "https://cdn.jsdelivr.net/npm/@codemirror/basic-setup@6.2.0/dist/index.js";
+import {EditorView} from "https://cdn.jsdelivr.net/npm/@codemirror/view@6.4.0/dist/index.js";
+import {python} from "https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.1.0/dist/index.js";
+import {oneDark} from "https://cdn.jsdelivr.net/npm/@codemirror/theme-one-dark@6.2.0/dist/index.js";
 
-    // Load Pyodide
-    let pyodide = null;
-    async function loadPyodideAndPackages() {
-      pyodide = await loadPyodide();
-    }
-    loadPyodideAndPackages();
+let tabs = {
+  "main": `# main.py\nprint("Hello from Dragomir IDE!")`,
+  "helper": `# helper.py\nprint("Helper loaded!")`
+};
 
-    const outputEl = document.getElementById('output');
+let currentTab = "main";
 
-    document.getElementById('runBtn').addEventListener('click', async () => {
-      if (!pyodide) {
-        outputEl.textContent = "Python is still loading, please wait...";
-        return;
-      }
-      const code = editor.state.doc.toString();
-      outputEl.textContent = ''; // clear previous output
-      try {
-        let result = await pyodide.runPythonAsync(code);
-        if (result !== undefined) outputEl.textContent += result + "\n";
-      } catch (err) {
-        outputEl.textContent += err + "\n";
-      }
-    });
-  </script>
+let editor = new EditorView({
+  state: EditorState.create({
+    doc: tabs[currentTab],
+    extensions: [basicSetup, python(), oneDark]
+  }),
+  parent: document.getElementById("editorContainer")
+});
 
-  <!-- Pyodide -->
-  <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+// Handle tab switching
+document.querySelectorAll(".tabs button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    // Save current editor content
+    tabs[currentTab] = editor.state.doc.toString();
+
+    // Remove active class
+    document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    currentTab = btn.dataset.tab;
+
+    // Update editor with new tab content
+    editor.setState(EditorState.create({
+      doc: tabs[currentTab],
+      extensions: [basicSetup, python(), oneDark]
+    }));
+  });
+});
+
+// Initialize Pyodide
+let pyodide = null;
+async function loadPyodideAndPackages() {
+  pyodide = await loadPyodide();
+}
+loadPyodideAndPackages();
+
+const outputEl = document.getElementById("output");
+
+document.getElementById("runBtn").addEventListener("click", async () => {
+  if (!pyodide) {
+    outputEl.textContent = "Python is still loading, please wait...";
+    return;
+  }
+
+  const code = editor.state.doc.toString();
+  outputEl.textContent = ""; // Clear previous output
+
+  try {
+    let result = await pyodide.runPythonAsync(code);
+    if (result !== undefined) outputEl.textContent += result + "\n";
+  } catch (err) {
+    outputEl.textContent += err + "\n";
+  }
+
+  // Auto-scroll
+  outputEl.scrollTop = outputEl.scrollHeight;
+});
+</script>
 
 </body>
 </html>
