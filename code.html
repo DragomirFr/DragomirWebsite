@@ -505,7 +505,7 @@
 
     <div class="container">
         <header>
-            <h1><span class="highlight">'s</span> Editor</h1>
+            <h1><span class="highlight">Dragomir's</span> Editor</h1>
             <div id="header-controls">
                 <button id="search-button" class="utility-button" title="Global Search (Ctrl/Cmd + Shift + F)">🔍</button>
                 <button id="settings-button" class="utility-button" title="Settings">⚙️</button>
@@ -858,7 +858,7 @@
             let fileCounter = 1;
             addTabButton.addEventListener('click', () => {
                 const newFileId = `file${Date.now()}`;
-                const newFileName = `${fileCounter++}.py`;
+                const newFileName = `dragomir${fileCounter++}.py`;
 
                 if (editorInstance) {
                     files[currentFileId].code = editorInstance.getValue();
@@ -866,7 +866,7 @@
                     files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
                 }
 
-                files[newFileId] = { name: newFileName, code: `Print("Dragomir's World!")`, unsaved: true, fold: [] };
+                files[newFileId] = { name: newFileName, code: `print("Dragomir's World!")`, unsaved: true, fold: [] };
 
                 currentFileId = newFileId;
                 fileOrder.push(newFileId);
