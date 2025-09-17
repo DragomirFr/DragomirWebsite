@@ -493,11 +493,22 @@
                 const target = e.target.closest('.tab');
                 if (target && !e.target.classList.contains('tab-close')) {
                     const newFileId = target.getAttribute('data-file-id');
+                    
+                    // 1. If we click the currently active tab, just return.
                     if (newFileId === currentFileId) return;
 
+                    // 2. IMPORTANT: Save the code from the OLD file before switching!
+                    // This ensures the current file's content is saved to the 'files' object.
+                    if (editorInstance) {
+                        files[currentFileId].code = editorInstance.getValue();
+                    }
+
+                    // 3. Update the state and UI
                     currentFileId = newFileId;
                     renderTabs();
-                    initializeEditor(currentFileId);
+                    
+                    // 4. Load the content for the NEW file into the editor.
+                    initializeEditor(currentFileId); 
                     saveFiles();
                 }
             });
