@@ -515,7 +515,8 @@
                 input.type = 'text';
                 input.value = oldName;
                 input.classList.add('tab-rename-input');
-                input.size = oldName.length;
+                // Set input size based on current name length
+                input.size = oldName.length > 5 ? oldName.length : 5; 
 
                 target.style.display = 'none';
                 tab.insertBefore(input, target.nextSibling);
@@ -552,7 +553,7 @@
                 const newFileId = `file${Date.now()}`;
                 const newFileName = `helper${fileCounter++}.py`;
 
-                files[newFileId] = { name: newFileName, code: `# Python file: ${newFileName}` };
+                files[newFileId] = { name: newFileName, code: `# Python file: ${newFileName}\ndef greet():\n    return f'Hello from {newFileName}'` };
 
                 currentFileId = newFileId;
                 renderTabs();
@@ -583,7 +584,6 @@
             });
 
             runButton.addEventListener('click', async () => {
-                const codeToRun = editorInstance.getValue();
                 const currentFileName = files[currentFileId].name;
                 outputConsole.textContent = ''; 
                 runButton.disabled = true;
@@ -595,6 +595,9 @@
                     pyodide.FS.writeFile(`/${files[fileId].name}`, files[fileId].code, { encoding: "utf8" });
                 }
 
+                // ** FIX: Small delay to ensure VFS flush before execution **
+                await new Promise(resolve => setTimeout(resolve, 10));
+
                 pyodide.setStdout({
                     batched: (message) => { outputConsole.textContent += message + '\n'; }
                 });
@@ -604,8 +607,11 @@
                 try {
                     outputConsole.style.color = 'var(--secondary-accent-color)';
                     
-                    // Run code using the VFS path
-                    await pyodide.runPythonAsync(pyodide.FS.readFile(`/${currentFileName}`, { encoding: "utf8" }));
+                    // Execute the code by reading the file from the VFS
+                    const codeToRun = pyodide.FS.readFile(`/${currentFileName}`, { encoding: "utf8" });
+                    
+                    // The core fix: we must explicitly run the file content
+                    await pyodide.runPythonAsync(codeToRun);
                     
                     outputConsole.style.color = 'var(--success-color)';
                 } catch (err) {
@@ -625,6 +631,7 @@
             renderTabs();
             
             try {
+                fileStatus.textContent = 'Loading interpreter...';
                 pyodide = await loadPyodide({
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
                 });
