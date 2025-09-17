@@ -1,1 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python IDE in Browser</title>
 
+<!-- CodeMirror for syntax highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/material-darker.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/python/python.min.js"></script>
+
+<style>
+  body {
+    margin: 0; 
+    font-family: Arial, sans-serif;
+    background: #1e1e1e;
+    color: #ddd;
+  }
+  header {
+    padding: 10px 20px;
+    background: #333;
+    color: #fff;
+    font-size: 18px;
+  }
+  #editor {
+    height: 300px;
+    border-bottom: 2px solid #444;
+  }
+  #controls {
+    padding: 10px;
+    background: #222;
+  }
+  button {
+    background: #4CAF50;
+    border: none;
+    padding: 10px 20px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+  button:hover {
+    background: #45a049;
+  }
+  #output {
+    padding: 10px;
+    background: #111;
+    height: 200px;
+    overflow-y: auto;
+    font-family: monospace;
+    white-space: pre-wrap;
+  }
+  .error {
+    color: #ff5555;
+  }
+  .success {
+    color: #aaffaa;
+  }
+</style>
+</head>
+<body>
+
+<header>🖥️ Python IDE (Browser)</header>
+
+<div id="editor"></div>
+
+<div id="controls">
+  <button onclick="runCode()">▶ Run (Ctrl+Enter)</button>
+</div>
+
+<h3 style="margin: 10px;">Console Output:</h3>
+<div id="output"></div>
+
+<!-- Pyodide -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+<script>
+  let editor = CodeMirror(document.getElementById("editor"), {
+    value: 'print("Hello, world!")\nfor i in range(5):\n    print("Count:", i)',
+    mode: "python",
+    theme: "material-darker",
+    lineNumbers: true,
+    indentUnit: 4,
+    tabSize: 4
+  });
+
+  let pyodideReady = false;
+  let pyodide;
+
+  async function loadPyodideAndPackages() {
+    appendOutput("Loading Python runtime, please wait...\n");
+    pyodide = await loadPyodide();
+    pyodideReady = true;
+    appendOutput("✅ Python ready!\n", "success");
+  }
+  loadPyodideAndPackages();
+
+  async function runCode() {
+    if (!pyodideReady) {
+      appendOutput("⚠️ Python is still loading...\n", "error");
+      return;
+    }
+    const code = editor.getValue();
+    try {
+      let result = await pyodide.runPythonAsync(code);
+      if (result !== undefined) {
+        appendOutput(result + "\n", "success");
+      }
+    } catch (err) {
+      appendOutput(err + "\n", "error");
+    }
+  }
+
+  function appendOutput(message, type) {
+    let output = document.getElementById("output");
+    let span = document.createElement("span");
+    span.className = type || "";
+    span.textContent = message;
+    output.appendChild(span);
+    output.scrollTop = output.scrollHeight;
+  }
+
+  // Ctrl+Enter to run
+  document.addEventListener("keydown", function(e) {
+    if (e.ctrlKey && e.key === "Enter") {
+      runCode();
+    }
+  });
+</script>
+
+</body>
+</html>
