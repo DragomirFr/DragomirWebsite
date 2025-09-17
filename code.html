@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dragomir Python Editor</title>
+<!-- CodeMirror 6 for editor -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@6.0.1/dist/codemirror.css">
+<style>
+    /* Full page dark theme */
+    body {
+        margin: 0;
+        font-family: 'Fira Code', monospace;
+        background-color: #1e1e1e;
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    header {
+        padding: 10px 20px;
+        background-color: #121212;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #333;
+    }
+
+    header h1 {
+        font-size: 1.2rem;
+        font-weight: 400;
+    }
+
+    button {
+        padding: 5px 15px;
+        background-color: #007acc;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    button:hover {
+        background-color: #005fa3;
+    }
+
+    #editor {
+        flex: 1;
+        height: 50%;
+    }
+
+    #output {
+        height: 40%;
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        padding: 10px;
+        overflow-y: auto;
+        font-family: 'Fira Code', monospace;
+        border-top: 1px solid #333;
+    }
+
+    .CodeMirror {
+        height: 100%;
+    }
+</style>
+</head>
+<body>
+<header>
+    <h1>Dragomir Python Editor</h1>
+    <button id="runBtn">Run</button>
+</header>
+
+<div id="editor"></div>
+<div id="output"></div>
+
+<!-- Pyodide -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+<!-- CodeMirror 6 (ES Modules) -->
+<script type="module">
+import {EditorState, basicSetup} from "https://cdn.jsdelivr.net/npm/@codemirror/basic-setup@6.2.0/dist/index.js";
+import {EditorView, keymap} from "https://cdn.jsdelivr.net/npm/@codemirror/view@6.4.0/dist/index.js";
+import {defaultHighlightStyle} from "https://cdn.jsdelivr.net/npm/@codemirror/highlight@6.5.0/dist/index.js";
+import {python} from "https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.1.0/dist/index.js";
+
+let editor = new EditorView({
+    state: EditorState.create({
+        doc: `# Write your Python code here\nprint("Hello from Dragomir Editor!")`,
+        extensions: [basicSetup, python(), defaultHighlightStyle]
+    }),
+    parent: document.getElementById('editor')
+});
+
+// Initialize Pyodide
+let pyodide = null;
+async function loadPyodideAndPackages() {
+    pyodide = await loadPyodide();
+}
+loadPyodideAndPackages();
+
+document.getElementById('runBtn').addEventListener('click', async () => {
+    if (!pyodide) {
+        alert("Python is still loading. Please wait a few seconds!");
+        return;
+    }
+    const code = editor.state.doc.toString();
+    try {
+        let output = await pyodide.runPythonAsync(code);
+        document.getElementById('output').textContent = output ?? '';
+    } catch (err) {
+        document.getElementById('output').textContent = err;
+    }
+});
+</script>
+</body>
+</html>
