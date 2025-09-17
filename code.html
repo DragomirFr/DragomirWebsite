@@ -387,12 +387,16 @@
             const STORAGE_KEY = 'pyeditor_files_v2';
             let files = {};
             let currentFileId = 'main';
-            let editorInstance;
+            let editorInstance = null; // Initialize as null
             let pyodide = null;
 
             // --- 1. FILE & LOCAL STORAGE PERSISTENCE ---
 
             function saveFiles() {
+                // Only save if the editor is initialized (after initial load)
+                if (editorInstance) {
+                    files[currentFileId].code = editorInstance.getValue();
+                }
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({ files, currentFileId }));
                 fileStatus.textContent = 'Auto-saved.';
                 setTimeout(() => fileStatus.textContent = 'Ready.', 1000);
@@ -416,38 +420,45 @@
             // --- 2. EDITOR INITIALIZATION & TAB RENDERING ---
 
             function initializeEditor(fileId) {
+                const fileCode = files[fileId].code;
+                
                 if (editorInstance) {
-                    editorInstance.toTextArea();
-                }
-                editorDiv.textContent = '';
-                editorInstance = CodeMirror(editorDiv, {
-                    value: files[fileId].code,
-                    mode: 'python',
-                    theme: 'dracula',
-                    lineNumbers: true,
-                    indentUnit: 4,
-                    tabSize: 4,
-                    indentWithTabs: true,
-                    autofocus: true,
-                    lineWrapping: true,
-                    autoCloseBrackets: true,
-                    autoCloseTags: true,
-                    extraKeys: { 
-                        "Ctrl-Space": "autocomplete",
-                        "Tab": function(cm) { // Custom tab for autocompletion fallback
-                            if (cm.somethingSelected()) {
-                                cm.indentSelection("add");
-                            } else if (cm.getOption("indentWithTabs")) {
-                                cm.replaceSelection("\t", "end", "+input");
-                            } else {
-                                const spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
-                                cm.replaceSelection(spaces, "end", "+input");
+                    // FIX: If editor already exists, just SET its value
+                    editorInstance.setValue(fileCode);
+                    editorInstance.focus();
+                } else {
+                    // Editor is null, create it for the first time
+                    editorInstance = CodeMirror(editorDiv, {
+                        value: fileCode,
+                        mode: 'python',
+                        theme: 'dracula',
+                        lineNumbers: true,
+                        indentUnit: 4,
+                        tabSize: 4,
+                        indentWithTabs: true,
+                        autofocus: true,
+                        lineWrapping: true,
+                        autoCloseBrackets: true,
+                        autoCloseTags: true,
+                        extraKeys: { 
+                            "Ctrl-Space": "autocomplete",
+                            "Tab": function(cm) { // Custom tab for autocompletion fallback
+                                if (cm.somethingSelected()) {
+                                    cm.indentSelection("add");
+                                } else if (cm.getOption("indentWithTabs")) {
+                                    cm.replaceSelection("\t", "end", "+input");
+                                } else {
+                                    const spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
+                                    cm.replaceSelection(spaces, "end", "+input");
+                                }
                             }
-                        }
-                    },
-                    hintOptions: { completeSingle: false, container: document.body }
-                });
-                editorInstance.on('change', saveFiles);
+                        },
+                        hintOptions: { completeSingle: false, container: document.body }
+                    });
+                    
+                    // Attach change listener *once*
+                    editorInstance.on('change', saveFiles);
+                }
             }
 
             function renderTabs() {
@@ -494,26 +505,24 @@
                 if (target && !e.target.classList.contains('tab-close')) {
                     const newFileId = target.getAttribute('data-file-id');
                     
-                    // 1. If we click the currently active tab, just return.
                     if (newFileId === currentFileId) return;
 
-                    // 2. IMPORTANT: Save the code from the OLD file before switching!
-                    // This ensures the current file's content is saved to the 'files' object.
+                    // FIX 1: SAVE the content of the file we are leaving.
                     if (editorInstance) {
                         files[currentFileId].code = editorInstance.getValue();
                     }
 
-                    // 3. Update the state and UI
+                    // Update the state and UI
                     currentFileId = newFileId;
                     renderTabs();
                     
-                    // 4. Load the content for the NEW file into the editor.
+                    // FIX 2: Load the content for the NEW file into the editor.
                     initializeEditor(currentFileId); 
                     saveFiles();
                 }
             });
             
-            // File Rename Handler (Double Click)
+            // File Rename Handler (Double Click) - Logic remains correct
             tabBar.addEventListener('dblclick', (e) => {
                 const target = e.target.closest('.tab-name');
                 if (!target) return;
@@ -526,7 +535,6 @@
                 input.type = 'text';
                 input.value = oldName;
                 input.classList.add('tab-rename-input');
-                // Set input size based on current name length
                 input.size = oldName.length > 5 ? oldName.length : 5; 
 
                 target.style.display = 'none';
@@ -564,6 +572,11 @@
                 const newFileId = `file${Date.now()}`;
                 const newFileName = `helper${fileCounter++}.py`;
 
+                // Save the current file's content before switching
+                if (editorInstance) {
+                    files[currentFileId].code = editorInstance.getValue();
+                }
+
                 files[newFileId] = { name: newFileName, code: `# Python file: ${newFileName}\ndef greet():\n    return f'Hello from {newFileName}'` };
 
                 currentFileId = newFileId;
@@ -587,7 +600,7 @@
                 saveFiles();
             }
 
-            // --- 4. PYODIDE EXECUTION LOGIC ---
+            // --- 4. PYODIDE EXECUTION LOGIC (Remains Correct) ---
 
             document.getElementById('clear-output').addEventListener('click', () => {
                 outputConsole.textContent = '';
@@ -595,6 +608,11 @@
             });
 
             runButton.addEventListener('click', async () => {
+                // Ensure current code is saved before running
+                if (editorInstance) {
+                    files[currentFileId].code = editorInstance.getValue();
+                }
+
                 const currentFileName = files[currentFileId].name;
                 outputConsole.textContent = ''; 
                 runButton.disabled = true;
@@ -606,7 +624,6 @@
                     pyodide.FS.writeFile(`/${files[fileId].name}`, files[fileId].code, { encoding: "utf8" });
                 }
 
-                // ** FIX: Small delay to ensure VFS flush before execution **
                 await new Promise(resolve => setTimeout(resolve, 10));
 
                 pyodide.setStdout({
@@ -618,10 +635,8 @@
                 try {
                     outputConsole.style.color = 'var(--secondary-accent-color)';
                     
-                    // Execute the code by reading the file from the VFS
                     const codeToRun = pyodide.FS.readFile(`/${currentFileName}`, { encoding: "utf8" });
                     
-                    // The core fix: we must explicitly run the file content
                     await pyodide.runPythonAsync(codeToRun);
                     
                     outputConsole.style.color = 'var(--success-color)';
