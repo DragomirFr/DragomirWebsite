@@ -10,6 +10,8 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
     <style>
         :root {
@@ -19,7 +21,7 @@
             --text-color: #e4e4f0;
             /* New Modern Blue Accent */
             --accent-color: #5352ed;
-            --secondary-accent-color: #ffbe76; /* Status/Loading color */
+            --secondary-accent-color: #ffbe76; 
             --border-color: #2e2e33;
             --header-bg: #141417;
             --console-bg: #101014;
@@ -44,6 +46,7 @@
             position: relative;
         }
 
+        /* ... (CSS for body::before and .container remains the same) ... */
         body::before {
             content: '';
             position: absolute;
@@ -115,14 +118,18 @@
             flex-direction: column;
         }
 
-        /* Improved Tab Bar Styling */
+        /* ---------------------------------- */
+        /* Improved Tab Bar Styling and Animations */
+        /* ---------------------------------- */
         .tab-bar {
             display: flex;
             border-bottom: 1px solid var(--border-color);
             background-color: var(--header-bg);
             padding: 0;
-            gap: 2px;
+            /* Remove gap and let flex handle spacing for SortableJS */
+            transition: height 0.3s ease;
         }
+        
         .tab {
             display: flex;
             align-items: center;
@@ -133,15 +140,37 @@
             border: none;
             border-right: 1px solid var(--border-color);
             font-family: 'Poppins', sans-serif;
-            transition: background-color 0.2s ease, color 0.2s ease;
+            
+            /* ADDED: Transition for smoother tab appearance/movement */
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
         }
         .tab-name {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             padding-right: 5px;
+            position: relative;
         }
+
+        /* ADDED: Unsaved Changes Indicator */
+        .unsaved::after {
+            content: '•';
+            color: var(--secondary-accent-color);
+            font-size: 1.5rem;
+            line-height: 0;
+            position: absolute;
+            top: 50%;
+            right: 0px;
+            transform: translateY(-50%);
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         .tab-rename-input {
+            /* ... (Input styles remain the same) ... */
             background-color: #333;
             color: var(--text-color);
             border: 1px solid var(--accent-color);
@@ -150,6 +179,7 @@
             font-family: 'Poppins', sans-serif;
         }
         .tab-close {
+            /* ... (Close button styles remain the same) ... */
             color: #ccc;
             margin-left: 8px;
             font-size: 0.8rem;
@@ -173,6 +203,7 @@
             padding-bottom: calc(0.75rem - 1px);
         }
         #add-tab-button {
+            /* ... (Add button styles remain the same) ... */
             background-color: transparent;
             border: none;
             color: var(--accent-color);
@@ -185,7 +216,17 @@
         #add-tab-button:hover {
             color: var(--text-color);
         }
-        
+
+        /* SortableJS styles for drag-and-drop */
+        .sortable-chosen {
+            opacity: 0.6;
+        }
+        .sortable-ghost {
+            opacity: 0.2;
+            background: #2e3039;
+        }
+
+        /* ... (The rest of the CSS remains the same) ... */
         .code-area {
             flex: 1;
             border: 2px solid var(--border-color);
@@ -343,9 +384,12 @@
 
         <main>
             <div class="code-and-tabs">
-                <div class="tab-bar" id="tab-bar">
-                    <button id="add-tab-button">+</button>
+                <div class="tab-bar-wrapper" style="display: flex; align-items: center; background-color: var(--header-bg);">
+                    <div class="tab-bar" id="tab-bar" style="display: flex;">
+                        </div>
+                    <button id="add-tab-button" style="padding: 0.75rem 1.25rem;">+</button>
                 </div>
+                
                 <div class="code-area">
                     <div id="editor"></div>
                 </div>
@@ -384,10 +428,11 @@
             const fileStatus = document.getElementById('file-status');
             const execTime = document.getElementById('exec-time');
 
-            const STORAGE_KEY = 'pyeditor_files_v2';
+            const STORAGE_KEY = 'pyeditor_files_v3';
             let files = {};
+            let fileOrder = []; // NEW: Array to maintain tab order
             let currentFileId = 'main';
-            let editorInstance = null; // Initialize as null
+            let editorInstance = null;
             let pyodide = null;
 
             // --- 1. FILE & LOCAL STORAGE PERSISTENCE ---
@@ -396,8 +441,11 @@
                 // Only save if the editor is initialized (after initial load)
                 if (editorInstance) {
                     files[currentFileId].code = editorInstance.getValue();
+                    // NEW: Update unsaved status
+                    files[currentFileId].unsaved = false;
+                    renderTabs(); 
                 }
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({ files, currentFileId }));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({ files, currentFileId, fileOrder }));
                 fileStatus.textContent = 'Auto-saved.';
                 setTimeout(() => fileStatus.textContent = 'Ready.', 1000);
             }
@@ -408,22 +456,38 @@
                     const data = JSON.parse(storedData);
                     files = data.files;
                     currentFileId = data.currentFileId;
+                    fileOrder = data.fileOrder || Object.keys(files); // Use stored order or generate it
+                    
+                    // Ensure the order array is clean and matches the files object
+                    fileOrder = fileOrder.filter(id => files[id]);
+                    Object.keys(files).forEach(id => {
+                        if (!fileOrder.includes(id)) {
+                            fileOrder.push(id);
+                        }
+                        // NEW: Ensure all files have the 'unsaved' property for UI
+                        if (files[id].unsaved === undefined) {
+                            files[id].unsaved = false;
+                        }
+                    });
+
                 } else {
                     // Default file structure
+                    const mainId = 'main';
                     files = {
-                        'main': { name: 'main.py', code: "print('Hello, Modern Web Editor!')\n\n# To test the tab system:\n# 1. Click '+' to create helper1.py\n# 2. Write a function there: def add(a, b): return a + b\n# 3. Come back here and import it:\n# from helper1 import add\n# print(add(5, 3))" },
+                        [mainId]: { name: 'main.py', code: "print('Hello, Modern Web Editor!')\n\n# Try dragging this tab to a new position.", unsaved: false },
                     };
-                    currentFileId = 'main';
+                    currentFileId = mainId;
+                    fileOrder = [mainId];
                 }
             }
-
+            
             // --- 2. EDITOR INITIALIZATION & TAB RENDERING ---
 
             function initializeEditor(fileId) {
                 const fileCode = files[fileId].code;
                 
                 if (editorInstance) {
-                    // FIX: If editor already exists, just SET its value
+                    // If editor exists, just SET its value
                     editorInstance.setValue(fileCode);
                     editorInstance.focus();
                 } else {
@@ -457,29 +521,43 @@
                     });
                     
                     // Attach change listener *once*
-                    editorInstance.on('change', saveFiles);
+                    editorInstance.on('change', () => {
+                        // NEW: Set unsaved status on file change
+                        if (files[currentFileId].unsaved === false) {
+                            files[currentFileId].unsaved = true;
+                            renderTabs();
+                        }
+                        // Throttle auto-save to only run after a brief pause
+                        if (this.saveTimer) clearTimeout(this.saveTimer);
+                        this.saveTimer = setTimeout(saveFiles, 1000);
+                    });
                 }
             }
 
             function renderTabs() {
-                tabBar.querySelectorAll('.tab').forEach(t => t.remove());
-                const addTabButton = document.getElementById('add-tab-button');
+                tabBar.innerHTML = ''; // Clear all old tabs
                 
-                Object.keys(files).forEach(fileId => {
+                fileOrder.forEach(fileId => {
                     const file = files[fileId];
+                    if (!file) return; // Skip if file was deleted but still in order array
+
                     const tab = document.createElement('button');
                     tab.classList.add('tab');
                     tab.setAttribute('data-file-id', fileId);
                     
-                    // Tab name display/rename target
                     const tabNameSpan = document.createElement('span');
                     tabNameSpan.classList.add('tab-name');
                     tabNameSpan.textContent = file.name;
                     tabNameSpan.title = file.name;
+
+                    // NEW: Add unsaved indicator class
+                    if (file.unsaved) {
+                        tabNameSpan.classList.add('unsaved');
+                    }
+                    
                     tab.appendChild(tabNameSpan);
 
                     if (fileId !== 'main') {
-                        // Delete Button
                         const closeButton = document.createElement('span');
                         closeButton.classList.add('tab-close');
                         closeButton.innerHTML = '×';
@@ -494,9 +572,30 @@
                     if (fileId === currentFileId) {
                         tab.classList.add('active');
                     }
-                    tabBar.insertBefore(tab, addTabButton);
+                    tabBar.appendChild(tab);
+                });
+                
+                // Re-apply SortableJS after rendering tabs
+                applySortable();
+            }
+            
+            function applySortable() {
+                // Initialize SortableJS for drag-and-drop
+                Sortable.create(tabBar, {
+                    animation: 250, // Smoother animation
+                    draggable: '.tab',
+                    filter: '#add-tab-button',
+                    onUpdate: function (evt) {
+                        const newOrder = Array.from(tabBar.children)
+                                              .map(el => el.getAttribute('data-file-id'))
+                                              .filter(id => id); // Filter out null/undefined
+                        
+                        fileOrder = newOrder;
+                        saveFiles();
+                    }
                 });
             }
+
 
             // --- 3. FILE MANAGEMENT LOGIC ---
 
@@ -507,16 +606,17 @@
                     
                     if (newFileId === currentFileId) return;
 
-                    // FIX 1: SAVE the content of the file we are leaving.
+                    // 1. SAVE the content of the file we are leaving.
                     if (editorInstance) {
                         files[currentFileId].code = editorInstance.getValue();
+                        files[currentFileId].unsaved = false; // Mark as saved on switch
                     }
 
-                    // Update the state and UI
+                    // 2. Update the state and UI
                     currentFileId = newFileId;
                     renderTabs();
                     
-                    // FIX 2: Load the content for the NEW file into the editor.
+                    // 3. Load the content for the NEW file into the editor.
                     initializeEditor(currentFileId); 
                     saveFiles();
                 }
@@ -525,8 +625,8 @@
             // File Rename Handler (Double Click) - Logic remains correct
             tabBar.addEventListener('dblclick', (e) => {
                 const target = e.target.closest('.tab-name');
-                if (!target) return;
-                
+                if (!target || target.classList.contains('unsaved')) return; // Ignore double-click on dot
+
                 const tab = target.closest('.tab');
                 const fileId = tab.getAttribute('data-file-id');
                 const oldName = files[fileId].name;
@@ -575,11 +675,13 @@
                 // Save the current file's content before switching
                 if (editorInstance) {
                     files[currentFileId].code = editorInstance.getValue();
+                    files[currentFileId].unsaved = false; // Mark old file as saved
                 }
 
-                files[newFileId] = { name: newFileName, code: `# Python file: ${newFileName}\ndef greet():\n    return f'Hello from {newFileName}'` };
+                files[newFileId] = { name: newFileName, code: `# Python file: ${newFileName}\ndef greet():\n    return f'Hello from {newFileName}'`, unsaved: true };
 
                 currentFileId = newFileId;
+                fileOrder.push(newFileId); // Add new file to the end of the order
                 renderTabs();
                 initializeEditor(currentFileId);
                 saveFiles();
@@ -590,9 +692,15 @@
 
                 delete files[fileIdToDelete];
                 
-                // If we deleted the active tab, switch to 'main' or the next available tab
+                // Remove from order array
+                const index = fileOrder.indexOf(fileIdToDelete);
+                if (index > -1) {
+                    fileOrder.splice(index, 1);
+                }
+                
+                // If we deleted the active tab, switch to the next file in order
                 if (fileIdToDelete === currentFileId) {
-                    currentFileId = Object.keys(files)[0]; // Fallback to the first file
+                    currentFileId = fileOrder[0]; // Fallback to the first file in the new order
                     initializeEditor(currentFileId);
                 }
 
@@ -608,9 +716,11 @@
             });
 
             runButton.addEventListener('click', async () => {
-                // Ensure current code is saved before running
+                // 1. Ensure current code is saved to file object before running
                 if (editorInstance) {
                     files[currentFileId].code = editorInstance.getValue();
+                    files[currentFileId].unsaved = false;
+                    renderTabs(); // Update indicator
                 }
 
                 const currentFileName = files[currentFileId].name;
@@ -618,10 +728,13 @@
                 runButton.disabled = true;
                 fileStatus.textContent = 'Running...';
                 execTime.textContent = '';
-
-                // 1. Write ALL files to the Pyodide virtual file system (VFS)
-                for (const fileId in files) {
-                    pyodide.FS.writeFile(`/${files[fileId].name}`, files[fileId].code, { encoding: "utf8" });
+                
+                // 2. Write ALL files to the Pyodide virtual file system (VFS)
+                for (const fileId of fileOrder) {
+                    const file = files[fileId];
+                    if (file) {
+                        pyodide.FS.writeFile(`/${file.name}`, file.code, { encoding: "utf8" });
+                    }
                 }
 
                 await new Promise(resolve => setTimeout(resolve, 10));
@@ -630,7 +743,7 @@
                     batched: (message) => { outputConsole.textContent += message + '\n'; }
                 });
 
-                // 2. Run the code from the active file and time it
+                // 3. Run the code from the active file and time it
                 const startTime = performance.now();
                 try {
                     outputConsole.style.color = 'var(--secondary-accent-color)';
