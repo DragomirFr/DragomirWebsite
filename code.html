@@ -1,123 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dragomir Python Editor</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragomir Python Editor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
-<!-- CodeMirror 5 CSS -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/dracula.min.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #0f0f0f;
+      color: white;
+      overflow: hidden;
+    }
 
-<style>
-body {
-    margin: 0;
-    font-family: 'Fira Code', monospace;
-    background-color: #1e1e1e;
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
+    /* Terminal output */
+    #output {
+      background-color: #111;
+      padding: 15px;
+      font-family: 'Fira Code', monospace;
+      font-size: 14px;
+      border-radius: 8px;
+      height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
 
-header {
-    padding: 10px 20px;
-    background-color: #121212;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #333;
-}
+    /* Editor container */
+    .editor-container {
+      height: 400px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
 
-header h1 {
-    font-size: 1.2rem;
-    font-weight: 400;
-}
-
-button {
-    padding: 5px 15px;
-    background-color: #007acc;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-button:hover {
-    background-color: #005fa3;
-}
-
-#editor {
-    flex: 1;
-}
-
-#output {
-    height: 40%;
-    background-color: #1e1e1e;
-    color: #d4d4d4;
-    padding: 10px;
-    overflow-y: auto;
-    font-family: 'Fira Code', monospace;
-    border-top: 1px solid #333;
-}
-</style>
+    /* Glowing button */
+    .run-btn {
+      background: linear-gradient(90deg, #ff416c, #ff4b2b);
+      padding: 10px 20px;
+      font-weight: 600;
+      border-radius: 6px;
+      transition: 0.3s;
+    }
+    .run-btn:hover {
+      filter: brightness(1.2);
+    }
+  </style>
 </head>
-<body>
-<header>
-    <h1>Dragomir Python Editor</h1>
-    <button id="runBtn">Run</button>
-</header>
+<body class="flex flex-col items-center justify-center min-h-screen p-6 space-y-6">
 
-<textarea id="editor"># Write your Python code here
-print("Hello from Dragomir Editor!")</textarea>
+  <h1 class="text-5xl font-extrabold text-gray-300 mb-4">Dragomir Python Editor</h1>
 
-<div id="output"></div>
+  <!-- Editor -->
+  <div class="w-full max-w-4xl editor-container mb-4">
+    <div id="editor" class="h-full"></div>
+  </div>
 
-<!-- CodeMirror 5 JS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/python/python.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/closebrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/matchbrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/display/placeholder.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/selection/active-line.min.js"></script>
+  <!-- Run button -->
+  <button id="runBtn" class="run-btn text-white mb-4">Run Code</button>
 
-<!-- Pyodide -->
-<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+  <!-- Output terminal -->
+  <div class="w-full max-w-4xl">
+    <div id="output" class="shadow-lg"></div>
+  </div>
 
-<script>
-let editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
-    lineNumbers: true,
-    mode: "python",
-    theme: "dracula",
-    matchBrackets: true,
-    autoCloseBrackets: true,
-    styleActiveLine: true,
-    indentUnit: 4,
-    tabSize: 4,
-    autofocus: true
-});
+  <!-- CodeMirror 6 -->
+  <script type="module">
+    import {EditorState, basicSetup} from "https://cdn.jsdelivr.net/npm/@codemirror/basic-setup@6.2.0/dist/index.js";
+    import {EditorView} from "https://cdn.jsdelivr.net/npm/@codemirror/view@6.4.0/dist/index.js";
+    import {python} from "https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.1.0/dist/index.js";
+    import {oneDark} from "https://cdn.jsdelivr.net/npm/@codemirror/theme-one-dark@6.2.0/dist/index.js";
 
-let pyodide = null;
+    const editor = new EditorView({
+      state: EditorState.create({
+        doc: `# Write your Python code here\nprint("Hello from Dragomir Editor!")`,
+        extensions: [basicSetup, python(), oneDark]
+      }),
+      parent: document.getElementById('editor')
+    });
 
-async function loadPyodideAndPackages() {
-    pyodide = await loadPyodide();
-}
-loadPyodideAndPackages();
+    // Load Pyodide
+    let pyodide = null;
+    async function loadPyodideAndPackages() {
+      pyodide = await loadPyodide();
+    }
+    loadPyodideAndPackages();
 
-document.getElementById('runBtn').addEventListener('click', async () => {
-    if (!pyodide) {
-        alert("Python is still loading. Please wait!");
+    const outputEl = document.getElementById('output');
+
+    document.getElementById('runBtn').addEventListener('click', async () => {
+      if (!pyodide) {
+        outputEl.textContent = "Python is still loading, please wait...";
         return;
-    }
-    const code = editor.getValue();
-    try {
-        let output = await pyodide.runPythonAsync(code);
-        document.getElementById('output').textContent = output ?? '';
-    } catch (err) {
-        document.getElementById('output').textContent = err;
-    }
-});
-</script>
+      }
+      const code = editor.state.doc.toString();
+      outputEl.textContent = ''; // clear previous output
+      try {
+        let result = await pyodide.runPythonAsync(code);
+        if (result !== undefined) outputEl.textContent += result + "\n";
+      } catch (err) {
+        outputEl.textContent += err + "\n";
+      }
+    });
+  </script>
+
+  <!-- Pyodide -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
 </body>
 </html>
