@@ -4,66 +4,63 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dragomir Python Editor</title>
-<!-- CodeMirror 6 for editor -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@6.0.1/dist/codemirror.css">
+
+<!-- CodeMirror 5 CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/dracula.min.css">
+
 <style>
-    /* Full page dark theme */
-    body {
-        margin: 0;
-        font-family: 'Fira Code', monospace;
-        background-color: #1e1e1e;
-        color: #ffffff;
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-    }
+body {
+    margin: 0;
+    font-family: 'Fira Code', monospace;
+    background-color: #1e1e1e;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
 
-    header {
-        padding: 10px 20px;
-        background-color: #121212;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #333;
-    }
+header {
+    padding: 10px 20px;
+    background-color: #121212;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
+}
 
-    header h1 {
-        font-size: 1.2rem;
-        font-weight: 400;
-    }
+header h1 {
+    font-size: 1.2rem;
+    font-weight: 400;
+}
 
-    button {
-        padding: 5px 15px;
-        background-color: #007acc;
-        border: none;
-        border-radius: 4px;
-        color: white;
-        cursor: pointer;
-        font-weight: bold;
-    }
+button {
+    padding: 5px 15px;
+    background-color: #007acc;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
 
-    button:hover {
-        background-color: #005fa3;
-    }
+button:hover {
+    background-color: #005fa3;
+}
 
-    #editor {
-        flex: 1;
-        height: 50%;
-    }
+#editor {
+    flex: 1;
+}
 
-    #output {
-        height: 40%;
-        background-color: #1e1e1e;
-        color: #d4d4d4;
-        padding: 10px;
-        overflow-y: auto;
-        font-family: 'Fira Code', monospace;
-        border-top: 1px solid #333;
-    }
-
-    .CodeMirror {
-        height: 100%;
-    }
+#output {
+    height: 40%;
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    padding: 10px;
+    overflow-y: auto;
+    font-family: 'Fira Code', monospace;
+    border-top: 1px solid #333;
+}
 </style>
 </head>
 <body>
@@ -72,29 +69,37 @@
     <button id="runBtn">Run</button>
 </header>
 
-<div id="editor"></div>
+<textarea id="editor"># Write your Python code here
+print("Hello from Dragomir Editor!")</textarea>
+
 <div id="output"></div>
+
+<!-- CodeMirror 5 JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/display/placeholder.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/selection/active-line.min.js"></script>
 
 <!-- Pyodide -->
 <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
 
-<!-- CodeMirror 6 (ES Modules) -->
-<script type="module">
-import {EditorState, basicSetup} from "https://cdn.jsdelivr.net/npm/@codemirror/basic-setup@6.2.0/dist/index.js";
-import {EditorView, keymap} from "https://cdn.jsdelivr.net/npm/@codemirror/view@6.4.0/dist/index.js";
-import {defaultHighlightStyle} from "https://cdn.jsdelivr.net/npm/@codemirror/highlight@6.5.0/dist/index.js";
-import {python} from "https://cdn.jsdelivr.net/npm/@codemirror/lang-python@6.1.0/dist/index.js";
-
-let editor = new EditorView({
-    state: EditorState.create({
-        doc: `# Write your Python code here\nprint("Hello from Dragomir Editor!")`,
-        extensions: [basicSetup, python(), defaultHighlightStyle]
-    }),
-    parent: document.getElementById('editor')
+<script>
+let editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+    lineNumbers: true,
+    mode: "python",
+    theme: "dracula",
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    styleActiveLine: true,
+    indentUnit: 4,
+    tabSize: 4,
+    autofocus: true
 });
 
-// Initialize Pyodide
 let pyodide = null;
+
 async function loadPyodideAndPackages() {
     pyodide = await loadPyodide();
 }
@@ -102,10 +107,10 @@ loadPyodideAndPackages();
 
 document.getElementById('runBtn').addEventListener('click', async () => {
     if (!pyodide) {
-        alert("Python is still loading. Please wait a few seconds!");
+        alert("Python is still loading. Please wait!");
         return;
     }
-    const code = editor.state.doc.toString();
+    const code = editor.getValue();
     try {
         let output = await pyodide.runPythonAsync(code);
         document.getElementById('output').textContent = output ?? '';
