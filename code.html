@@ -858,7 +858,7 @@
             let fileCounter = 1;
             addTabButton.addEventListener('click', () => {
                 const newFileId = `file${Date.now()}`;
-                const newFileName = `dragomir${fileCounter++}.py`;
+                const newFileName = `${fileCounter++}.py`;
 
                 if (editorInstance) {
                     files[currentFileId].code = editorInstance.getValue();
@@ -866,7 +866,7 @@
                     files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
                 }
 
-                files[newFileId] = { name: newFileName, code: `Print('Dragomir's World!')`, unsaved: true, fold: [] };
+                files[newFileId] = { name: newFileName, code: `Print("Dragomir's World!")`, unsaved: true, fold: [] };
 
                 currentFileId = newFileId;
                 fileOrder.push(newFileId);
