@@ -139,9 +139,33 @@
         #run-button:hover {
             background-color: var(--secondary-accent-color);
         }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            z-index: 1000;
+        }
+        .loading-text {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body>
+    <div class="loading-overlay" id="loading-overlay">
+        <p>Initializing Python environment...</p>
+        <p class="loading-text">This may take a moment.</p>
+    </div>
+
     <div class="container">
         <header>
             <h1><span class="highlight">Python</span> Editor</h1>
@@ -159,15 +183,21 @@
         </main>
 
         <footer>
-            <button id="run-button">Run Code</button>
+            <button id="run-button" disabled>Run Code</button>
         </footer>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            const outputConsole = document.getElementById('output');
+            const runButton = document.getElementById('run-button');
+            const loadingOverlay = document.getElementById('loading-overlay');
+
+            // Initialize CodeMirror editor
             const editor = CodeMirror(document.getElementById('editor'), {
                 mode: 'python',
                 theme: 'dracula',
@@ -182,20 +212,35 @@
                 }
             });
 
-            editor.setValue("print('Hello, world!')\n\n# Your code goes here...");
+            // Set initial placeholder code
+            editor.setValue("import sys\n\nprint('Hello, world!')\n\n# Pyodide captures print() output and streams it here.\n# For example, let's print a simple loop:\nfor i in range(5):\n    print(f'Loop iteration: {i}')");
 
-            const runButton = document.getElementById('run-button');
-            const outputConsole = document.getElementById('output');
+            // Load Pyodide and the Python environment
+            const pyodide = await loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
+            });
 
-            runButton.addEventListener('click', () => {
+            // Hide loading overlay and enable the button once Pyodide is ready
+            loadingOverlay.style.display = 'none';
+            runButton.disabled = false;
+            
+            // Redirect sys.stdout to our output console
+            pyodide.setStdout({
+                batched: (message) => {
+                    outputConsole.textContent += message + '\n';
+                }
+            });
+
+            runButton.addEventListener('click', async () => {
                 const code = editor.getValue();
                 outputConsole.textContent = 'Running code...';
-                
-                // ! This is where you would connect to a backend server.
-                // ! The code below is a placeholder and does not execute Python.
-                setTimeout(() => {
-                    outputConsole.textContent = "This is a placeholder for the output. You need a backend server to run the Python code!";
-                }, 1000);
+
+                try {
+                    await pyodide.runPythonAsync(code);
+                } catch (err) {
+                    outputConsole.textContent = `Error: ${err}`;
+                    outputConsole.style.color = '#ff5555';
+                }
             });
         });
     </script>
