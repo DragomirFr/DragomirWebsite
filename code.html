@@ -19,7 +19,7 @@
             --text-color: #e4e4f0;
             /* New Modern Blue Accent */
             --accent-color: #5352ed;
-            --secondary-accent-color: #ffbe76;
+            --secondary-accent-color: #ffbe76; /* Status/Loading color */
             --border-color: #2e2e33;
             --header-bg: #141417;
             --console-bg: #101014;
@@ -96,6 +96,11 @@
             color: var(--accent-color);
         }
 
+        #header-controls {
+            display: flex;
+            align-items: center;
+        }
+
         main {
             display: flex;
             flex: 1;
@@ -116,9 +121,11 @@
             border-bottom: 1px solid var(--border-color);
             background-color: var(--header-bg);
             padding: 0;
-            gap: 2px; /* Space between tabs */
+            gap: 2px;
         }
         .tab {
+            display: flex;
+            align-items: center;
             padding: 0.75rem 1.25rem;
             cursor: pointer;
             color: var(--text-color);
@@ -128,6 +135,31 @@
             font-family: 'Poppins', sans-serif;
             transition: background-color 0.2s ease, color 0.2s ease;
         }
+        .tab-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 5px;
+        }
+        .tab-rename-input {
+            background-color: #333;
+            color: var(--text-color);
+            border: 1px solid var(--accent-color);
+            padding: 0 5px;
+            border-radius: 3px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .tab-close {
+            color: #ccc;
+            margin-left: 8px;
+            font-size: 0.8rem;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+        .tab-close:hover {
+            color: var(--error-color);
+        }
+
         .tab:first-of-type {
             border-top-left-radius: 8px;
         }
@@ -138,7 +170,7 @@
             background-color: var(--main-bg-color);
             color: var(--accent-color);
             border-bottom: 3px solid var(--accent-color);
-            padding-bottom: calc(0.75rem - 1px); /* Keep height consistent */
+            padding-bottom: calc(0.75rem - 1px);
         }
         #add-tab-button {
             background-color: transparent;
@@ -167,7 +199,6 @@
             height: 100%;
             font-size: 1rem;
             line-height: 1.5;
-            /* JetBrains Mono for the actual code */
             font-family: 'JetBrains Mono', monospace; 
         }
 
@@ -178,34 +209,6 @@
 
         .CodeMirror-linenumbers {
             color: var(--border-color) !important;
-        }
-        
-        /* CodeMirror Autocompletion Styling (matches dark theme) */
-        .CodeMirror-hints {
-            position: absolute;
-            z-index: 1000;
-            overflow: hidden;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            max-height: 20em;
-            overflow-y: auto;
-            background: var(--console-bg);
-            border: 1px solid var(--accent-color);
-            border-radius: 5px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .CodeMirror-hint {
-            margin: 0;
-            padding: 4px 8px;
-            white-space: pre;
-            color: var(--text-color);
-            cursor: pointer;
-        }
-        .CodeMirror-hint-active {
-            background: var(--accent-color);
-            color: var(--header-bg) !important;
         }
 
         .console-area {
@@ -219,12 +222,28 @@
         }
 
         .console-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             background-color: var(--border-color);
             color: var(--text-color);
             padding: 0.75rem 1.5rem;
             font-weight: 600;
             border-bottom: 1px solid #6272a4;
             font-family: 'Poppins', sans-serif;
+        }
+        
+        #clear-output {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 1rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        #clear-output:hover {
+            opacity: 1;
         }
 
         #output {
@@ -235,7 +254,6 @@
             overflow-y: auto;
             font-size: 0.9rem;
             color: var(--success-color);
-            /* JetBrains Mono for the output/terminal */
             font-family: 'JetBrains Mono', monospace; 
         }
 
@@ -262,6 +280,25 @@
             cursor: not-allowed;
         }
 
+        /* Status Bar Styling */
+        #status-bar {
+            padding: 0.5rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--header-bg);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border-color);
+        }
+        #file-status {
+            color: var(--secondary-accent-color);
+        }
+        #exec-time {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        /* Loading Overlay */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -299,13 +336,14 @@
     <div class="container">
         <header>
             <h1><span class="highlight">Python</span> Editor</h1>
-            <button id="run-button" disabled>Run Code</button>
+            <div id="header-controls">
+                <button id="run-button" disabled>Run Code</button>
+            </div>
         </header>
 
         <main>
             <div class="code-and-tabs">
                 <div class="tab-bar" id="tab-bar">
-                    <button class="tab active" data-file-id="main">main.py</button>
                     <button id="add-tab-button">+</button>
                 </div>
                 <div class="code-area">
@@ -314,10 +352,18 @@
             </div>
 
             <div class="console-area">
-                <div class="console-header">Output</div>
+                <div class="console-header">
+                    Output
+                    <button id="clear-output" title="Clear Output">🗑️</button>
+                </div>
                 <pre id="output"></pre>
             </div>
         </main>
+        
+        <div id="status-bar">
+            <span id="file-status">Ready.</span>
+            <span id="exec-time"></span>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
@@ -335,15 +381,40 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             const tabBar = document.getElementById('tab-bar');
             const editorDiv = document.getElementById('editor');
+            const fileStatus = document.getElementById('file-status');
+            const execTime = document.getElementById('exec-time');
 
-            // File state management
-            const files = {
-                'main': { name: 'main.py', code: "print('Hello, Modern Web Editor!')\n\n# Try typing 'pr' and pressing Ctrl+Space for autocompletion\n# Try typing an opening bracket '(' or quote '\"' for auto-closing." },
-            };
+            const STORAGE_KEY = 'pyeditor_files_v2';
+            let files = {};
             let currentFileId = 'main';
             let editorInstance;
+            let pyodide = null;
 
-            // --- Editor Initialization Function ---
+            // --- 1. FILE & LOCAL STORAGE PERSISTENCE ---
+
+            function saveFiles() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({ files, currentFileId }));
+                fileStatus.textContent = 'Auto-saved.';
+                setTimeout(() => fileStatus.textContent = 'Ready.', 1000);
+            }
+
+            function loadFiles() {
+                const storedData = localStorage.getItem(STORAGE_KEY);
+                if (storedData) {
+                    const data = JSON.parse(storedData);
+                    files = data.files;
+                    currentFileId = data.currentFileId;
+                } else {
+                    // Default file structure
+                    files = {
+                        'main': { name: 'main.py', code: "print('Hello, Modern Web Editor!')\n\n# To test the tab system:\n# 1. Click '+' to create helper1.py\n# 2. Write a function there: def add(a, b): return a + b\n# 3. Come back here and import it:\n# from helper1 import add\n# print(add(5, 3))" },
+                    };
+                    currentFileId = 'main';
+                }
+            }
+
+            // --- 2. EDITOR INITIALIZATION & TAB RENDERING ---
+
             function initializeEditor(fileId) {
                 if (editorInstance) {
                     editorInstance.toTextArea();
@@ -359,67 +430,200 @@
                     indentWithTabs: true,
                     autofocus: true,
                     lineWrapping: true,
-                    // ** NEW FEATURE: Auto-closing Brackets/Quotes **
                     autoCloseBrackets: true,
                     autoCloseTags: true,
-                    // ** NEW FEATURE: Autocompletion (triggered by Ctrl+Space) **
                     extraKeys: { 
                         "Ctrl-Space": "autocomplete",
-                        "Tab": function(cm) {
-                             if (cm.somethingSelected()) {
+                        "Tab": function(cm) { // Custom tab for autocompletion fallback
+                            if (cm.somethingSelected()) {
                                 cm.indentSelection("add");
-                             } else if (cm.getOption("indentWithTabs")) {
-                                 cm.replaceSelection("\t", "end", "+input");
-                             } else {
-                                 const spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
-                                 cm.replaceSelection(spaces, "end", "+input");
-                             }
+                            } else if (cm.getOption("indentWithTabs")) {
+                                cm.replaceSelection("\t", "end", "+input");
+                            } else {
+                                const spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
+                                cm.replaceSelection(spaces, "end", "+input");
+                            }
                         }
                     },
-                    hintOptions: {
-                        completeSingle: false,
-                        container: document.body
-                    }
+                    hintOptions: { completeSingle: false, container: document.body }
                 });
-                editorInstance.on('change', () => {
-                    files[currentFileId].code = editorInstance.getValue();
+                editorInstance.on('change', saveFiles);
+            }
+
+            function renderTabs() {
+                tabBar.querySelectorAll('.tab').forEach(t => t.remove());
+                const addTabButton = document.getElementById('add-tab-button');
+                
+                Object.keys(files).forEach(fileId => {
+                    const file = files[fileId];
+                    const tab = document.createElement('button');
+                    tab.classList.add('tab');
+                    tab.setAttribute('data-file-id', fileId);
+                    
+                    // Tab name display/rename target
+                    const tabNameSpan = document.createElement('span');
+                    tabNameSpan.classList.add('tab-name');
+                    tabNameSpan.textContent = file.name;
+                    tabNameSpan.title = file.name;
+                    tab.appendChild(tabNameSpan);
+
+                    if (fileId !== 'main') {
+                        // Delete Button
+                        const closeButton = document.createElement('span');
+                        closeButton.classList.add('tab-close');
+                        closeButton.innerHTML = '×';
+                        closeButton.title = 'Delete File';
+                        closeButton.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            deleteFile(fileId);
+                        });
+                        tab.appendChild(closeButton);
+                    }
+
+                    if (fileId === currentFileId) {
+                        tab.classList.add('active');
+                    }
+                    tabBar.insertBefore(tab, addTabButton);
                 });
             }
 
-            // --- Tab Management ---
+            // --- 3. FILE MANAGEMENT LOGIC ---
+
             tabBar.addEventListener('click', (e) => {
-                if (e.target.classList.contains('tab')) {
-                    const newFileId = e.target.getAttribute('data-file-id');
+                const target = e.target.closest('.tab');
+                if (target && !e.target.classList.contains('tab-close')) {
+                    const newFileId = target.getAttribute('data-file-id');
                     if (newFileId === currentFileId) return;
 
-                    document.querySelector('.tab.active').classList.remove('active');
-                    e.target.classList.add('active');
                     currentFileId = newFileId;
+                    renderTabs();
                     initializeEditor(currentFileId);
+                    saveFiles();
                 }
             });
+            
+            // File Rename Handler (Double Click)
+            tabBar.addEventListener('dblclick', (e) => {
+                const target = e.target.closest('.tab-name');
+                if (!target) return;
+                
+                const tab = target.closest('.tab');
+                const fileId = tab.getAttribute('data-file-id');
+                const oldName = files[fileId].name;
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = oldName;
+                input.classList.add('tab-rename-input');
+                input.size = oldName.length;
+
+                target.style.display = 'none';
+                tab.insertBefore(input, target.nextSibling);
+                input.focus();
+                input.select();
+                
+                const rename = () => {
+                    const newName = input.value.trim().replace(/\s/g, '_');
+                    const extension = newName.includes('.') ? '' : '.py';
+                    const finalName = newName.endsWith('.py') ? newName : newName + extension;
+                    
+                    if (finalName && finalName !== oldName) {
+                        files[fileId].name = finalName;
+                        renderTabs();
+                        saveFiles();
+                    } else {
+                        target.textContent = oldName;
+                    }
+
+                    input.remove();
+                    target.style.display = 'inline';
+                };
+
+                input.addEventListener('blur', rename);
+                input.addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') rename();
+                });
+            });
+
 
             const addTabButton = document.getElementById('add-tab-button');
             let fileCounter = 1;
             addTabButton.addEventListener('click', () => {
-                const newFileId = `file${fileCounter++}`;
-                const newFileName = `script${fileCounter-1}.py`;
-                files[newFileId] = { name: newFileName, code: '# Use the main file to run code.' };
+                const newFileId = `file${Date.now()}`;
+                const newFileName = `helper${fileCounter++}.py`;
 
-                const newTab = document.createElement('button');
-                newTab.classList.add('tab');
-                newTab.textContent = newFileName;
-                newTab.setAttribute('data-file-id', newFileId);
-                tabBar.insertBefore(newTab, addTabButton);
-                
-                document.querySelector('.tab.active').classList.remove('active');
-                newTab.classList.add('active');
+                files[newFileId] = { name: newFileName, code: `# Python file: ${newFileName}` };
+
                 currentFileId = newFileId;
+                renderTabs();
                 initializeEditor(currentFileId);
+                saveFiles();
             });
 
-            // --- Pyodide Execution Logic ---
-            let pyodide = null;
+            function deleteFile(fileIdToDelete) {
+                if (!confirm(`Are you sure you want to delete ${files[fileIdToDelete].name}?`)) return;
+
+                delete files[fileIdToDelete];
+                
+                // If we deleted the active tab, switch to 'main' or the next available tab
+                if (fileIdToDelete === currentFileId) {
+                    currentFileId = Object.keys(files)[0]; // Fallback to the first file
+                    initializeEditor(currentFileId);
+                }
+
+                renderTabs();
+                saveFiles();
+            }
+
+            // --- 4. PYODIDE EXECUTION LOGIC ---
+
+            document.getElementById('clear-output').addEventListener('click', () => {
+                outputConsole.textContent = '';
+                execTime.textContent = '';
+            });
+
+            runButton.addEventListener('click', async () => {
+                const codeToRun = editorInstance.getValue();
+                const currentFileName = files[currentFileId].name;
+                outputConsole.textContent = ''; 
+                runButton.disabled = true;
+                fileStatus.textContent = 'Running...';
+                execTime.textContent = '';
+
+                // 1. Write ALL files to the Pyodide virtual file system (VFS)
+                for (const fileId in files) {
+                    pyodide.FS.writeFile(`/${files[fileId].name}`, files[fileId].code, { encoding: "utf8" });
+                }
+
+                pyodide.setStdout({
+                    batched: (message) => { outputConsole.textContent += message + '\n'; }
+                });
+
+                // 2. Run the code from the active file and time it
+                const startTime = performance.now();
+                try {
+                    outputConsole.style.color = 'var(--secondary-accent-color)';
+                    
+                    // Run code using the VFS path
+                    await pyodide.runPythonAsync(pyodide.FS.readFile(`/${currentFileName}`, { encoding: "utf8" }));
+                    
+                    outputConsole.style.color = 'var(--success-color)';
+                } catch (err) {
+                    outputConsole.textContent = `Error: ${err}`;
+                    outputConsole.style.color = 'var(--error-color)';
+                } finally {
+                    const endTime = performance.now();
+                    runButton.disabled = false;
+                    fileStatus.textContent = 'Ready.';
+                    execTime.textContent = `Executed in ${(endTime - startTime).toFixed(2)} ms`;
+                }
+            });
+
+            // --- 5. INITIALIZATION ---
+
+            loadFiles();
+            renderTabs();
+            
             try {
                 pyodide = await loadPyodide({
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
@@ -427,37 +631,11 @@
                 loadingOverlay.style.display = 'none';
                 runButton.disabled = false;
                 initializeEditor(currentFileId);
+                fileStatus.textContent = 'Ready.';
             } catch (error) {
                 loadingOverlay.innerHTML = `<p style="color:var(--error-color);">Failed to load Python environment. Check your connection.</p>`;
                 console.error(error);
             }
-
-            runButton.addEventListener('click', async () => {
-                const code = editorInstance.getValue();
-                outputConsole.textContent = ''; // Clear the output
-                runButton.disabled = true;
-
-                // Redirect print statements
-                pyodide.setStdout({
-                    batched: (message) => { outputConsole.textContent += message + '\n'; }
-                });
-
-                // Run code
-                try {
-                    // Reset output color before run
-                    outputConsole.style.color = 'var(--secondary-accent-color)';
-                    
-                    await pyodide.runPythonAsync(code);
-                    
-                    // Set success color if no error was caught
-                    outputConsole.style.color = 'var(--success-color)';
-                } catch (err) {
-                    outputConsole.textContent = `Error: ${err}`;
-                    outputConsole.style.color = 'var(--error-color)';
-                } finally {
-                    runButton.disabled = false;
-                }
-            });
         });
     </script>
 </body>
