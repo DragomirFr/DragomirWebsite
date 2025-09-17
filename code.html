@@ -7,21 +7,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --bg-color: #1a1a2e;
-            --main-bg-color: #282a3a;
+            --bg-color: #0d0d10;
+            --main-bg-color: #1a1a1f;
             --text-color: #e4e4f0;
-            --accent-color: #6c63ff;
-            --secondary-accent-color: #a463ff;
-            --border-color: #44475a;
-            --header-bg: #212133;
-            --console-bg: #131320;
-            --run-button-color: #4b42b6;
-            --run-button-hover: #3a3399;
-            --error-color: #ff5555;
-            --success-color: #50fa7b;
+            --accent-color: #8c7ae6; /* A more subtle purple */
+            --secondary-accent-color: #ffbe76; /* A soft orange */
+            --border-color: #2e2e33;
+            --header-bg: #141417;
+            --console-bg: #101014;
+            --run-button-color: #6c5ce7;
+            --run-button-hover: #5d4cd0;
+            --error-color: #ff6b6b;
+            --success-color: #2ed573;
         }
 
         body {
@@ -45,16 +46,17 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(45deg, var(--bg-color), var(--header-bg), var(--bg-color));
-            background-size: 400% 400%;
-            animation: backgroundGradient 15s ease infinite;
+            background: radial-gradient(circle at 10% 20%, var(--main-bg-color), transparent), 
+                        radial-gradient(circle at 90% 80%, var(--bg-color), transparent);
+            background-size: 200% 200%;
+            animation: backgroundGradient 20s ease infinite;
             z-index: -1;
         }
 
         @keyframes backgroundGradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+            100% { background-position: 0% 0%; }
         }
 
         .container {
@@ -149,7 +151,7 @@
             height: 100%;
             font-size: 1rem;
             line-height: 1.5;
-            font-family: 'Fira Code', monospace;
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .CodeMirror-gutters {
@@ -187,6 +189,7 @@
             overflow-y: auto;
             font-size: 0.9rem;
             color: var(--success-color);
+            font-family: 'JetBrains Mono', monospace; /* Set the font for the output */
         }
 
         footer {
@@ -289,19 +292,17 @@
             const tabBar = document.getElementById('tab-bar');
             const editorDiv = document.getElementById('editor');
 
-            // Store editor instances and file content
             const files = {
                 'main': { name: 'main.py', code: "print('Hello, WebAssembly!')" },
             };
             let currentFileId = 'main';
             let editorInstance;
 
-            // Initialize CodeMirror editor
             function initializeEditor(fileId) {
                 if (editorInstance) {
-                    editorInstance.toTextArea(); // Detach old editor
+                    editorInstance.toTextArea();
                 }
-                editorDiv.textContent = ''; // Clear old content
+                editorDiv.textContent = '';
                 editorInstance = CodeMirror(editorDiv, {
                     value: files[fileId].code,
                     mode: 'python',
@@ -319,7 +320,6 @@
                 });
             }
 
-            // Tab switching logic
             tabBar.addEventListener('click', (e) => {
                 if (e.target.classList.contains('tab')) {
                     const newFileId = e.target.getAttribute('data-file-id');
@@ -332,7 +332,6 @@
                 }
             });
 
-            // Add new tab functionality
             const addTabButton = document.getElementById('add-tab-button');
             let fileCounter = 1;
             addTabButton.addEventListener('click', () => {
@@ -346,14 +345,12 @@
                 newTab.setAttribute('data-file-id', newFileId);
                 tabBar.insertBefore(newTab, addTabButton);
                 
-                // Switch to the new tab
                 document.querySelector('.tab.active').classList.remove('active');
                 newTab.classList.add('active');
                 currentFileId = newFileId;
                 initializeEditor(currentFileId);
             });
 
-            // Pyodide and execution logic
             let pyodide = null;
             try {
                 pyodide = await loadPyodide({
@@ -369,7 +366,7 @@
 
             runButton.addEventListener('click', async () => {
                 const code = editorInstance.getValue();
-                outputConsole.textContent = 'Running code...\n';
+                outputConsole.textContent = ''; // Clear the output
                 runButton.disabled = true;
 
                 pyodide.setStdout({
@@ -377,10 +374,7 @@
                 });
 
                 try {
-                    const result = await pyodide.runPythonAsync(code);
-                    if (result !== undefined) {
-                        outputConsole.textContent += `>>> ${result}`;
-                    }
+                    await pyodide.runPythonAsync(code);
                     outputConsole.style.color = 'var(--success-color)';
                 } catch (err) {
                     outputConsole.textContent = `Error: ${err}`;
