@@ -6,25 +6,30 @@
     <title>Python Web Editor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css">
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
+            /* Deeper, modern black/grey theme */
             --bg-color: #0d0d10;
             --main-bg-color: #1a1a1f;
             --text-color: #e4e4f0;
-            --accent-color: #8c7ae6; /* A more subtle purple */
-            --secondary-accent-color: #ffbe76; /* A soft orange */
+            /* New Modern Blue Accent */
+            --accent-color: #5352ed;
+            --secondary-accent-color: #ffbe76;
             --border-color: #2e2e33;
             --header-bg: #141417;
             --console-bg: #101014;
-            --run-button-color: #6c5ce7;
-            --run-button-hover: #5d4cd0;
+            --run-button-color: #5352ed;
+            --run-button-hover: #4746cc;
             --error-color: #ff6b6b;
             --success-color: #2ed573;
         }
 
+        /* Set Poppins as the primary font for all UI elements */
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -105,11 +110,13 @@
             flex-direction: column;
         }
 
+        /* Improved Tab Bar Styling */
         .tab-bar {
             display: flex;
-            border-bottom: 2px solid var(--border-color);
-            padding: 0 0.5rem;
+            border-bottom: 1px solid var(--border-color);
             background-color: var(--header-bg);
+            padding: 0;
+            gap: 2px; /* Space between tabs */
         }
         .tab {
             padding: 0.75rem 1.25rem;
@@ -117,27 +124,36 @@
             color: var(--text-color);
             background-color: var(--header-bg);
             border: none;
+            border-right: 1px solid var(--border-color);
+            font-family: 'Poppins', sans-serif;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .tab:first-of-type {
             border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
-            font-family: inherit;
-            transition: background-color 0.3s ease, color 0.3s ease;
         }
         .tab:hover {
-            background-color: var(--border-color);
+            background-color: #2e3039;
         }
         .tab.active {
             background-color: var(--main-bg-color);
             color: var(--accent-color);
-            border-bottom: 2px solid var(--accent-color);
+            border-bottom: 3px solid var(--accent-color);
+            padding-bottom: calc(0.75rem - 1px); /* Keep height consistent */
         }
         #add-tab-button {
             background-color: transparent;
             border: none;
-            color: var(--text-color);
+            color: var(--accent-color);
             font-size: 1.5rem;
             margin-left: 0.5rem;
             cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
         }
+        #add-tab-button:hover {
+            color: var(--text-color);
+        }
+        
         .code-area {
             flex: 1;
             border: 2px solid var(--border-color);
@@ -151,7 +167,8 @@
             height: 100%;
             font-size: 1rem;
             line-height: 1.5;
-            font-family: 'JetBrains Mono', monospace;
+            /* JetBrains Mono for the actual code */
+            font-family: 'JetBrains Mono', monospace; 
         }
 
         .CodeMirror-gutters {
@@ -161,6 +178,34 @@
 
         .CodeMirror-linenumbers {
             color: var(--border-color) !important;
+        }
+        
+        /* CodeMirror Autocompletion Styling (matches dark theme) */
+        .CodeMirror-hints {
+            position: absolute;
+            z-index: 1000;
+            overflow: hidden;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 20em;
+            overflow-y: auto;
+            background: var(--console-bg);
+            border: 1px solid var(--accent-color);
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .CodeMirror-hint {
+            margin: 0;
+            padding: 4px 8px;
+            white-space: pre;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+        .CodeMirror-hint-active {
+            background: var(--accent-color);
+            color: var(--header-bg) !important;
         }
 
         .console-area {
@@ -179,6 +224,7 @@
             padding: 0.75rem 1.5rem;
             font-weight: 600;
             border-bottom: 1px solid #6272a4;
+            font-family: 'Poppins', sans-serif;
         }
 
         #output {
@@ -189,14 +235,8 @@
             overflow-y: auto;
             font-size: 0.9rem;
             color: var(--success-color);
-            font-family: 'JetBrains Mono', monospace; /* Set the font for the output */
-        }
-
-        footer {
-            padding: 1.5rem;
-            border-top: 2px solid var(--border-color);
-            display: flex;
-            justify-content: flex-end;
+            /* JetBrains Mono for the output/terminal */
+            font-family: 'JetBrains Mono', monospace; 
         }
 
         #run-button {
@@ -205,7 +245,7 @@
             border: none;
             padding: 0.75rem 2rem;
             border-radius: 8px;
-            font-family: inherit;
+            font-family: 'Poppins', sans-serif;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
@@ -282,6 +322,10 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/python-hint.min.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
 
     <script>
@@ -292,12 +336,14 @@
             const tabBar = document.getElementById('tab-bar');
             const editorDiv = document.getElementById('editor');
 
+            // File state management
             const files = {
-                'main': { name: 'main.py', code: "print('Hello, WebAssembly!')" },
+                'main': { name: 'main.py', code: "print('Hello, Modern Web Editor!')\n\n# Try typing 'pr' and pressing Ctrl+Space for autocompletion\n# Try typing an opening bracket '(' or quote '\"' for auto-closing." },
             };
             let currentFileId = 'main';
             let editorInstance;
 
+            // --- Editor Initialization Function ---
             function initializeEditor(fileId) {
                 if (editorInstance) {
                     editorInstance.toTextArea();
@@ -313,13 +359,34 @@
                     indentWithTabs: true,
                     autofocus: true,
                     lineWrapping: true,
-                    extraKeys: { "Ctrl-Space": "autocomplete" }
+                    // ** NEW FEATURE: Auto-closing Brackets/Quotes **
+                    autoCloseBrackets: true,
+                    autoCloseTags: true,
+                    // ** NEW FEATURE: Autocompletion (triggered by Ctrl+Space) **
+                    extraKeys: { 
+                        "Ctrl-Space": "autocomplete",
+                        "Tab": function(cm) {
+                             if (cm.somethingSelected()) {
+                                cm.indentSelection("add");
+                             } else if (cm.getOption("indentWithTabs")) {
+                                 cm.replaceSelection("\t", "end", "+input");
+                             } else {
+                                 const spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
+                                 cm.replaceSelection(spaces, "end", "+input");
+                             }
+                        }
+                    },
+                    hintOptions: {
+                        completeSingle: false,
+                        container: document.body
+                    }
                 });
                 editorInstance.on('change', () => {
                     files[currentFileId].code = editorInstance.getValue();
                 });
             }
 
+            // --- Tab Management ---
             tabBar.addEventListener('click', (e) => {
                 if (e.target.classList.contains('tab')) {
                     const newFileId = e.target.getAttribute('data-file-id');
@@ -336,8 +403,8 @@
             let fileCounter = 1;
             addTabButton.addEventListener('click', () => {
                 const newFileId = `file${fileCounter++}`;
-                const newFileName = `file${fileCounter-1}.py`;
-                files[newFileId] = { name: newFileName, code: '# New file' };
+                const newFileName = `script${fileCounter-1}.py`;
+                files[newFileId] = { name: newFileName, code: '# Use the main file to run code.' };
 
                 const newTab = document.createElement('button');
                 newTab.classList.add('tab');
@@ -351,6 +418,7 @@
                 initializeEditor(currentFileId);
             });
 
+            // --- Pyodide Execution Logic ---
             let pyodide = null;
             try {
                 pyodide = await loadPyodide({
@@ -360,7 +428,7 @@
                 runButton.disabled = false;
                 initializeEditor(currentFileId);
             } catch (error) {
-                loadingOverlay.innerHTML = `<p style="color:red;">Failed to load Pyodide. Please check your internet connection.</p>`;
+                loadingOverlay.innerHTML = `<p style="color:var(--error-color);">Failed to load Python environment. Check your connection.</p>`;
                 console.error(error);
             }
 
@@ -369,12 +437,19 @@
                 outputConsole.textContent = ''; // Clear the output
                 runButton.disabled = true;
 
+                // Redirect print statements
                 pyodide.setStdout({
                     batched: (message) => { outputConsole.textContent += message + '\n'; }
                 });
 
+                // Run code
                 try {
+                    // Reset output color before run
+                    outputConsole.style.color = 'var(--secondary-accent-color)';
+                    
                     await pyodide.runPythonAsync(code);
+                    
+                    // Set success color if no error was caught
                     outputConsole.style.color = 'var(--success-color)';
                 } catch (err) {
                     outputConsole.textContent = `Error: ${err}`;
