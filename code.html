@@ -12,10 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css">
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-
     <style>
         :root {
             /* Initial Default Settings (Dark) */
@@ -32,356 +29,281 @@
             --error-color: #ff6b6b;
             --success-color: #2ed573;
             --code-font-size: 1.0rem;
+            --consent-button-color: var(--success-color); /* Green for acceptance */
+            --consent-button-hover: #1e8449;
 
-            /* NEW: Light Mode Overrides */
-            &[data-theme="light"] {
-                --bg-color: #f7f7f7;
+            /* Light Mode Overrides */
+            &[data-theme='light'] {
+                --bg-color: #f0f0f5;
                 --main-bg-color: #ffffff;
                 --text-color: #333333;
-                --accent-color: #2081c7;
-                --secondary-accent-color: #f5a623;
-                --border-color: #dddddd;
-                --header-bg: #eeeeee;
-                --console-bg: #f5f5f5;
-                --run-button-color: #2081c7;
-                --run-button-hover: #18649c;
-                --error-color: #d9534f;
-                --success-color: #5cb85c;
+                --accent-color: #4f46e5;
+                --secondary-accent-color: #fbbf24;
+                --border-color: #e5e7eb;
+                --header-bg: #e2e2e7;
+                --console-bg: #e7e7e9;
+                --run-button-color: #4f46e5;
+                --run-button-hover: #4338ca;
+                --error-color: #ef4444;
+                --success-color: #22c55e;
             }
         }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Poppins', sans-serif;
+        /* Base styles */
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            flex-direction: column;
+            height: 100vh;
             overflow: hidden;
-            position: relative;
-            font-size: 16px;
-        }
-
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 10% 20%, var(--main-bg-color), transparent), 
-                        radial-gradient(circle at 90% 80%, var(--bg-color), transparent);
-            background-size: 200% 200%;
-            animation: backgroundGradient 20s ease infinite;
-            z-index: -1;
-        }
-
-        @keyframes backgroundGradient {
-            0% { background-position: 0% 0%; }
-            50% { background-position: 100% 100%; }
-            100% { background-position: 0% 0%; }
         }
 
         .container {
             display: flex;
             flex-direction: column;
-            width: 95%;
-            max-width: 1400px;
-            height: 95vh;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background-color: var(--header-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-button {
             background-color: var(--main-bg-color);
             border: 1px solid var(--border-color);
-        }
-
-        header {
-            background-color: var(--header-bg);
-            padding: 1rem 2.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .highlight {
-            color: var(--accent-color);
-        }
-
-        #header-controls {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        /* NEW: Utility buttons (Search/Settings) */
-        .utility-button {
-            background: none;
-            border: none;
             color: var(--text-color);
-            font-size: 1.5rem;
+            padding: 8px 12px;
+            border-radius: 8px;
             cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.2s, color 0.2s;
-        }
-        .utility-button:hover {
-            opacity: 1;
-            color: var(--accent-color);
-        }
-
-        main {
+            transition: background-color 0.2s, transform 0.2s;
             display: flex;
-            flex: 1;
-            overflow: hidden;
-            padding: 1.5rem;
-            gap: 1.5rem;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            line-height: 1;
         }
 
-        .code-and-tabs {
-            flex: 2;
+        .icon-button:hover {
+            background-color: var(--border-color);
+            transform: translateY(-2px);
+        }
+
+        /* Main editor area */
+        .main-content {
             display: flex;
             flex-direction: column;
+            flex-grow: 1;
+            gap: 10px;
+            min-height: 0; /* Ensures flexbox sizing works correctly */
         }
-
-        .tab-bar-wrapper {
-            border-bottom: 1px solid var(--border-color);
-            background-color: var(--header-bg);
-            padding: 0;
+        
+        /* Code Editor */
+        .editor-container {
+            flex: 1 1 60%;
+            background-color: var(--main-bg-color);
+            border-radius: 10px;
             overflow: hidden;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
         }
 
         .tab-bar {
             display: flex;
+            padding: 5px 10px;
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: nowrap;
             overflow-x: auto;
-            flex-grow: 1;
+            scrollbar-width: none; /* Hide scrollbar for Firefox */
         }
-        
+
         .tab-bar::-webkit-scrollbar {
-            display: none; /* Hide scrollbar in tab bar */
+            display: none; /* Hide scrollbar for Webkit browsers */
         }
-        
+
         .tab {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1.25rem;
+            padding: 8px 15px;
             cursor: pointer;
             color: var(--text-color);
-            background-color: var(--header-bg);
-            border: none;
-            border-right: 1px solid var(--border-color);
-            font-family: 'Poppins', sans-serif;
-            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
-        }
-        .tab-name {
+            opacity: 0.6;
+            transition: opacity 0.2s;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            padding-right: 5px;
-            position: relative;
+            max-width: 150px;
         }
 
-        .unsaved::after {
-            content: '•';
-            color: var(--secondary-accent-color);
-            font-size: 1.5rem;
-            line-height: 0;
-            position: absolute;
-            top: 50%;
-            right: 0px;
-            transform: translateY(-50%);
-            animation: blink 1.5s infinite;
-        }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .tab-rename-input {
-            background-color: #333;
-            color: var(--text-color);
-            border: 1px solid var(--accent-color);
-            padding: 0 5px;
-            border-radius: 3px;
-            font-family: 'Poppins', sans-serif;
-        }
-        .tab-close {
-            color: #ccc;
-            margin-left: 8px;
-            font-size: 0.8rem;
-            transition: color 0.2s;
-            line-height: 1;
-        }
-        .tab-close:hover {
-            color: var(--error-color);
-        }
-
-        .tab:first-of-type {
-            border-top-left-radius: 8px;
-        }
         .tab:hover {
-            background-color: #2e3039;
+            opacity: 0.8;
         }
+
         .tab.active {
+            opacity: 1;
             background-color: var(--main-bg-color);
-            color: var(--accent-color);
-            border-bottom: 3px solid var(--accent-color);
-            padding-bottom: calc(0.75rem - 1px);
-        }
-        #add-tab-button {
-            background-color: transparent;
-            border: none;
-            color: var(--accent-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-            line-height: 1;
-            transition: color 0.2s;
-            flex-shrink: 0;
-        }
-        #add-tab-button:hover {
-            color: var(--text-color);
-        }
-
-        /* SortableJS styles for drag-and-drop */
-        .sortable-chosen { opacity: 0.6; }
-        .sortable-ghost { opacity: 0.2; background: #2e3039; }
-
-        .code-area {
-            flex: 1;
-            border: 2px solid var(--border-color);
-            border-top: none;
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-            overflow: hidden;
-            position: relative; /* For the search modal positioning */
+            border-radius: 8px 8px 0 0;
         }
 
         .CodeMirror {
-            height: 100%;
-            font-size: var(--code-font-size); 
+            flex-grow: 1;
+            font-size: var(--code-font-size);
             line-height: 1.5;
-            font-family: 'JetBrains Mono', monospace; 
+            height: 100% !important;
+            border-radius: 0 0 10px 10px;
+            overflow: hidden;
         }
 
         .CodeMirror-gutters {
-            background-color: var(--header-bg) !important;
+            background-color: var(--main-bg-color) !important;
             border-right: 1px solid var(--border-color) !important;
         }
 
         .CodeMirror-linenumbers {
-            color: var(--border-color) !important;
+            color: var(--text-color) !important;
+            opacity: 0.5;
         }
-        
-        /* NEW: Code Mirror theme overrides for light mode */
-        [data-theme="light"] .CodeMirror { background-color: white !important; color: black !important; }
-        [data-theme="light"] .CodeMirror-gutters { background-color: var(--header-bg) !important; }
-        [data-theme="light"] .CodeMirror-linenumbers { color: #888 !important; }
 
-        .console-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+        /* Console */
+        .console-container {
+            flex: 1 1 40%;
             background-color: var(--console-bg);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .console-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--border-color);
-            color: var(--text-color);
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            border-bottom: 1px solid #6272a4;
-            font-family: 'Poppins', sans-serif;
-        }
-        
-        #clear-output {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            cursor: pointer;
-            font-size: 1rem;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        #clear-output:hover {
-            opacity: 1;
-        }
-
-        #output {
-            flex: 1;
-            white-space: pre-wrap;
-            padding: 1rem;
-            margin: 0;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            padding: 10px;
             overflow-y: auto;
-            font-size: 0.9rem;
-            color: var(--success-color);
-            font-family: 'JetBrains Mono', monospace; 
+            font-family: monospace;
+            white-space: pre-wrap;
+            position: relative;
+        }
+
+        .console-container::before {
+            content: 'Console Output';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            padding: 5px;
+            font-size: 0.9em;
+            color: var(--text-color);
+            opacity: 0.5;
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 10px 10px 0 0;
         }
         
-        /* NEW: Debug/Error Output Coloring */
-        .output-debug { color: var(--secondary-accent-color); }
-        .output-error { color: var(--error-color); }
-        .output-log { color: var(--success-color); }
-
-        #run-button {
-            background-color: var(--run-button-color);
-            color: var(--text-color);
-            border: none;
-            padding: 0.75rem 2rem;
-            border-radius: 8px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.1s ease;
+        .console-container h4 {
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
+            text-align: center;
         }
 
-        #run-button:hover:not(:disabled) {
+        /* Run button */
+        .run-button {
+            padding: 12px 20px;
+            background-color: var(--run-button-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        .run-button:hover:not(:disabled) {
             background-color: var(--run-button-hover);
             transform: translateY(-2px);
         }
 
-        #run-button:disabled {
-            background-color: #555;
+        .run-button:disabled {
+            background-color: var(--border-color);
             cursor: not-allowed;
+            color: #888;
         }
-
-        /* Status Bar Styling */
-        #status-bar {
-            padding: 0.5rem 1.5rem;
+        
+        /* Status Bar */
+        .status-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 5px 15px;
             background-color: var(--header-bg);
-            font-size: 0.8rem;
-            border-top: 1px solid var(--border-color);
+            border-radius: 10px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            opacity: 0.8;
         }
-        #file-status {
-            color: var(--secondary-accent-color);
-        }
-        #exec-time {
-            color: var(--success-color);
-            font-weight: 600;
-        }
-        
-        /* ---------------------------------- */
-        /* MODAL AND FLOATING PANEL STYLES */
-        /* ---------------------------------- */
 
+        /* Full-screen Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2rem;
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Modal Overlays for Settings & Consent */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -389,769 +311,412 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
             display: none; /* Hidden by default */
             justify-content: center;
             align-items: center;
-            z-index: 2000;
+            z-index: 900;
         }
+        
         .modal-content {
             background-color: var(--main-bg-color);
+            color: var(--text-color);
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            width: 90%;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
             max-width: 500px;
-            color: var(--text-color);
-            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            position: relative;
+            animation: fadeIn 0.3s ease-in-out;
+            border: 1px solid var(--border-color);
         }
+
         .modal-content h3 {
-            margin-top: 0;
+            margin-bottom: 20px;
             color: var(--accent-color);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            font-size: 1.6rem;
         }
-        .modal-content label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
+
+        .modal-content p {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
         }
-        .modal-content select, .modal-content input[type="range"], .modal-content input[type="color"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            background-color: var(--header-bg);
-            color: var(--text-color);
-            box-sizing: border-box;
-            -webkit-appearance: none;
-        }
-        .modal-content input[type="color"] {
-            height: 40px;
-            padding: 0;
-        }
+        
         .modal-content button {
-            background-color: var(--run-button-color);
-            color: white;
             padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            float: right;
-        }
-
-        /* Global Search Panel */
-        #search-modal {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: var(--header-bg);
-            border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 10px;
-            width: 300px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-        }
-        #search-modal input {
-            padding: 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background-color: var(--main-bg-color);
-            color: var(--text-color);
-        }
-        #search-results-list {
-            max-height: 150px;
-            overflow-y: auto;
-            border-top: 1px solid var(--border-color);
-            padding-top: 5px;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-        .search-result-item {
-            padding: 5px;
-            border-bottom: 1px dotted var(--border-color);
-            transition: background-color 0.1s;
-        }
-        .search-result-item:hover {
-            background-color: #333333;
-        }
-        .search-file-name {
+            border: none;
             font-weight: 600;
-            color: var(--accent-color);
-        }
-        .search-replace-buttons {
-            display: flex;
-            gap: 5px;
-        }
-        .search-replace-buttons button {
-            flex-grow: 1;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            margin-top: 10px;
         }
 
+        .modal-content button:hover {
+            transform: translateY(-2px);
+        }
+        
+        #close-settings, #accept-consent-button {
+            padding: 10px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        #close-settings:hover, #accept-consent-button:hover {
+            background-color: var(--run-button-hover);
+        }
+
+        #accept-consent-button {
+            background-color: var(--consent-button-color);
+        }
+        
+        #accept-consent-button:hover {
+            background-color: var(--consent-button-hover);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 5px;
+                gap: 5px;
+            }
+            
+            .main-content {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body data-theme="dark">
-    <div class="loading-overlay" id="loading-overlay">
-        <p>Initializing Python environment...</p>
-        <p class="loading-text">This may take a moment.</p>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-text">Loading...</p>
     </div>
 
     <div class="container">
-        <header>
-            <h1><span class="highlight">Dragomir's</span> Editor</h1>
-            <div id="header-controls">
-                <button id="search-button" class="utility-button" title="Global Search (Ctrl/Cmd + Shift + F)">🔍</button>
-                <button id="settings-button" class="utility-button" title="Settings">⚙️</button>
-                <button id="run-button" disabled>Run Code</button>
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="logo">Dragomir's IDE</div>
+            <div class="actions">
+                <button id="add-file-button" class="icon-button" title="New File">+</button>
+                <button id="run-button" class="run-button">Run Code</button>
+                <button id="settings-button" class="icon-button">⚙️</button>
             </div>
-        </header>
-
-        <main>
-            <div class="code-and-tabs">
-                <div class="tab-bar-wrapper">
-                    <div class="tab-bar" id="tab-bar">
-                        </div>
-                    <button id="add-tab-button" style="padding: 0.75rem 1.25rem;">+</button>
-                </div>
-                
-                <div class="code-area">
-                    <div id="editor"></div>
-                    
-                    <div id="search-modal">
-                        <input type="text" id="search-input" placeholder="Search across all files" autofocus>
-                        <input type="text" id="replace-input" placeholder="Replace with (optional)">
-                        <div id="search-replace-controls" class="search-replace-buttons">
-                            <button id="find-all-button" class="search-button">Find All</button>
-                            <button id="replace-all-button" disabled>Replace All</button>
-                        </div>
-                        <p id="search-summary" style="margin: 0; font-size: 0.8rem;"></p>
-                        <div id="search-results-list"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="console-area">
-                <div class="console-header">
-                    Output
-                    <button id="clear-output" title="Clear Output">🗑️</button>
-                </div>
-                <div id="output"></div>
-            </div>
-        </main>
+        </div>
         
-        <div id="status-bar">
-            <span id="file-status">Ready.</span>
+        <div class="main-content">
+            <!-- Code Editor -->
+            <div class="editor-container">
+                <div id="tab-bar" class="tab-bar"></div>
+                <div id="editor-wrapper"></div>
+            </div>
+            
+            <!-- Console -->
+            <div class="console-container" id="console-output">
+                <h4>Console Output</h4>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="file-status">Initializing...</span>
             <span id="exec-time"></span>
         </div>
     </div>
     
     <div id="settings-overlay" class="modal-overlay">
         <div class="modal-content">
-            <h3>Editor Settings</h3>
-
-            <label for="theme-select">Theme:</label>
-            <select id="theme-select">
-                <option value="dark">Dark (Dracula)</option>
-                <option value="light">Light (Default)</option>
-            </select>
-
-            <label for="accent-color-picker">Accent Color:</label>
-            <input type="color" id="accent-color-picker" value="#5352ed">
-            
-            <label for="font-size-slider">Code Font Size: <span id="font-size-value">16px</span></label>
-            <input type="range" id="font-size-slider" min="12" max="24" value="16">
-
-            <button id="close-settings">Close</button>
+            <h3>Settings</h3>
+            <p>Theme:</p>
+            <button id="dark-mode-button">Dark Mode</button>
+            <button id="light-mode-button">Light Mode</button>
+            <p style="margin-top: 15px;">Font Size:</p>
+            <button id="font-size-down-button">A-</button>
+            <button id="font-size-up-button">A+</button>
+            <button id="close-settings" style="margin-top: 20px;">Close</button>
         </div>
     </div>
+    
+    <!-- NEW: CONSENT MODAL FOR COOKIES AND TOS -->
+    <div id="consent-overlay" class="modal-overlay" style="display: flex;">
+        <div class="modal-content">
+            <h3>Welcome to Dragomir's Editor</h3>
 
+            <p>This editor uses your browser's **Local Storage** to save your code and settings. By continuing, you agree to the use of cookies/local storage for persistence and accept our:</p>
+            
+            <p><a href="#" target="_blank" style="color: var(--accent-color);">Terms of Service</a> and <a href="#" target="_blank" style="color: var(--accent-color);">Cookie Policy</a>.</p>
+            
+            <p style="font-size: 0.9rem; margin-top: 20px;">*The application will not load until you accept these terms.</p>
+
+            <button id="accept-consent-button" style="background-color: var(--consent-button-color);">I Understand and Accept</button>
+        </div>
+    </div>
+    <!-- END NEW: CONSENT MODAL -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/python-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/indent-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/selection/active-line.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
-
+    
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const outputConsole = document.getElementById('output');
-            const runButton = document.getElementById('run-button');
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const tabBar = document.getElementById('tab-bar');
-            const editorDiv = document.getElementById('editor');
-            const fileStatus = document.getElementById('file-status');
-            const execTime = document.getElementById('exec-time');
+            let pyodide = null;
+            let editor = null;
+            let currentFileId = null;
+            let currentFileName = null;
+
             const body = document.body;
 
             const STORAGE_KEY = 'pyeditor_files_v4';
             const SETTINGS_KEY = 'pyeditor_settings_v1';
+            const CONSENT_KEY = 'pyeditor_consent_v1';
             
             let files = {};
-            let fileOrder = [];
-            let currentFileId = 'main';
-            let editorInstance = null;
-            let pyodide = null;
-            let settings = {};
+            const defaultFiles = {
+                'main.py': `print("Hello, world!")\n\ndef greeting(name):\n    return f"Hello, {name}!"\n\nprint(greeting("Dragomir"))`,
+                'info.py': `# This is an additional file. Click on the tabs above to switch files.\n\n# The editor supports multiple files. You can also add a new file by clicking the '+' button.`
+            };
+            
+            // UI elements
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const runButton = document.getElementById('run-button');
+            const fileStatus = document.getElementById('file-status');
+            const execTime = document.getElementById('exec-time');
+            const consoleOutput = document.getElementById('console-output');
+            const tabBar = document.getElementById('tab-bar');
+            const editorWrapper = document.getElementById('editor-wrapper');
+            const addFileButton = document.getElementById('add-file-button');
 
-            // Default CodeMirror theme and font
-            let cmTheme = 'dracula';
-            let cmFontSize = 16;
-            let cmAccentColor = '#5352ed';
+            // Settings modal elements
+            const settingsButton = document.getElementById('settings-button');
+            const settingsOverlay = document.getElementById('settings-overlay');
+            const closeSettingsButton = document.getElementById('close-settings');
+            const darkModeButton = document.getElementById('dark-mode-button');
+            const lightModeButton = document.getElementById('light-mode-button');
+            const fontSizeUpButton = document.getElementById('font-size-up-button');
+            const fontSizeDownButton = document.getElementById('font-size-down-button');
 
-            // --- 0. SETTINGS & THEMING ---
-
-            function loadSettings() {
-                const storedSettings = localStorage.getItem(SETTINGS_KEY);
-                settings = storedSettings ? JSON.parse(storedSettings) : {
-                    theme: 'dark',
-                    accent: '#5352ed',
-                    fontSize: 16
-                };
-
-                cmTheme = settings.theme === 'light' ? 'default' : 'dracula';
-                cmFontSize = settings.fontSize;
-                cmAccentColor = settings.accent;
-
-                applySettings();
+            // Consent modal elements
+            const consentOverlay = document.getElementById('consent-overlay');
+            const acceptConsentButton = document.getElementById('accept-consent-button');
+            
+            // --- 1. CORE FUNCTIONS ---
+            
+            function customPrint(text) {
+                const p = document.createElement('p');
+                p.textContent = text;
+                consoleOutput.appendChild(p);
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
             }
 
-            function saveSettings() {
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            function clearConsole() {
+                consoleOutput.innerHTML = '<h4>Console Output</h4>';
+            }
+            
+            function getCodeMirrorTheme() {
+                return body.getAttribute('data-theme') === 'light' ? 'default' : 'dracula';
             }
 
-            function applySettings() {
-                // Apply theme to the body (for custom CSS)
-                body.setAttribute('data-theme', settings.theme);
+            // --- 2. EDITOR AND FILE MANAGEMENT ---
+            
+            function initializeEditor(fileId) {
+                if (editor) {
+                    editorWrapper.innerHTML = '';
+                    editor.toTextArea();
+                }
+
+                currentFileId = fileId;
+                currentFileName = files[fileId].name;
+                const code = files[fileId].content;
                 
-                // Apply accent color
-                document.documentElement.style.setProperty('--accent-color', settings.accent);
-                document.documentElement.style.setProperty('--run-button-color', settings.accent);
+                editor = CodeMirror(editorWrapper, {
+                    value: code,
+                    mode: 'python',
+                    theme: getCodeMirrorTheme(),
+                    lineNumbers: true,
+                    autofocus: true,
+                    indentUnit: 4,
+                    tabSize: 4,
+                    lineWrapping: true,
+                    extraKeys: {
+                        "Tab": function(cm) {
+                            if (cm.getMode().name === "python") {
+                                var spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
+                                cm.replaceSelection(spaces);
+                            } else {
+                                cm.execCommand('insertTab');
+                            }
+                        }
+                    }
+                });
+
+                // Attach event to save content on change
+                editor.on('change', () => {
+                    files[currentFileId].content = editor.getValue();
+                    saveFiles();
+                });
                 
-                // Apply font size
-                document.documentElement.style.setProperty('--code-font-size', `${settings.fontSize / 16}rem`);
-                
-                // Update CodeMirror if initialized
-                if (editorInstance) {
-                    editorInstance.setOption('theme', cmTheme);
+                // Set the font size from CSS variable
+                const style = getComputedStyle(body);
+                const fontSize = style.getPropertyValue('--code-font-size');
+                editor.getWrapperElement().style.fontSize = fontSize;
+            }
+            
+            function renderTabs() {
+                tabBar.innerHTML = '';
+                for (const fileId in files) {
+                    const tab = document.createElement('div');
+                    tab.className = `tab ${fileId === currentFileId ? 'active' : ''}`;
+                    tab.textContent = files[fileId].name;
+                    tab.dataset.fileId = fileId;
+                    tabBar.appendChild(tab);
                 }
             }
 
-            // --- 1. FILE & LOCAL STORAGE PERSISTENCE ---
+            tabBar.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList.contains('tab') && target.dataset.fileId !== currentFileId) {
+                    const fileId = target.dataset.fileId;
+                    initializeEditor(fileId);
+                    renderTabs();
+                }
+            });
+
+            addFileButton.addEventListener('click', () => {
+                const newFileName = prompt("Enter new file name (e.g., my_script.py):");
+                if (newFileName && newFileName.trim()) {
+                    const fileId = `file_${Date.now()}`;
+                    files[fileId] = { name: newFileName.trim(), content: '' };
+                    saveFiles();
+                    initializeEditor(fileId);
+                    renderTabs();
+                }
+            });
+
+            // --- 3. PERSISTENCE (LOCAL STORAGE) ---
 
             function saveFiles() {
-                if (editorInstance) {
-                    // Save content and folding state (CodeMirror persistence)
-                    files[currentFileId].code = editorInstance.getValue();
-                    files[currentFileId].unsaved = false;
-                    files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
-                    
-                    renderTabs(); 
-                }
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({ files, currentFileId, fileOrder }));
-                fileStatus.textContent = 'Auto-saved.';
-                setTimeout(() => fileStatus.textContent = 'Ready.', 1000);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(files));
             }
 
             function loadFiles() {
-                const storedData = localStorage.getItem(STORAGE_KEY);
-                if (storedData) {
-                    const data = JSON.parse(storedData);
-                    files = data.files;
-                    currentFileId = data.currentFileId;
-                    fileOrder = data.fileOrder || Object.keys(files);
-                    
-                    fileOrder = fileOrder.filter(id => files[id]);
-                    Object.keys(files).forEach(id => {
-                        if (!fileOrder.includes(id)) {
-                            fileOrder.push(id);
-                        }
-                        if (files[id].unsaved === undefined) files[id].unsaved = false;
-                        if (files[id].fold === undefined) files[id].fold = []; // Initialize fold state
-                    });
-
+                const savedFiles = localStorage.getItem(STORAGE_KEY);
+                if (savedFiles) {
+                    files = JSON.parse(savedFiles);
                 } else {
-                    const mainId = 'main';
                     files = {
-                        [mainId]: { name: 'main.py', code: "print(''s World!')\n", unsaved: false, fold: [] },
+                        'main.py': { name: 'main.py', content: defaultFiles['main.py'] },
+                        'info.py': { name: 'info.py', content: defaultFiles['info.py'] }
                     };
-                    currentFileId = mainId;
-                    fileOrder = [mainId];
                 }
-            }
-            
-            // --- 2. EDITOR INITIALIZATION & TAB RENDERING ---
 
-            function initializeEditor(fileId) {
-                const file = files[fileId];
-                
-                if (editorInstance) {
-                    // Existing instance: update value, theme, and restore folding
-                    editorInstance.setValue(file.code);
-                    editorInstance.setOption('theme', cmTheme);
-                    editorInstance.focus();
-                    
-                    // Clear existing folds and apply new ones
-                    editorInstance.getAllMarks().forEach(m => m.clear());
-                    file.fold.forEach(range => {
-                        if (range.from && range.to) {
-                             editorInstance.foldCode(CodeMirror.Pos(range.from.line, range.from.ch));
-                        }
-                    });
-
-                } else {
-                    // New instance: create and configure
-                    editorInstance = CodeMirror(editorDiv, {
-                        value: file.code,
-                        mode: 'python',
-                        theme: cmTheme,
-                        lineNumbers: true,
-                        indentUnit: 4,
-                        tabSize: 4,
-                        indentWithTabs: true,
-                        autofocus: true,
-                        lineWrapping: true,
-                        autoCloseBrackets: true,
-                        autoCloseTags: true,
-                        lineWiseCopyCut: true,
-                        foldGutter: true,
-                        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-                        foldOptions: {
-                            widget: "...",
-                            rangeFinder: CodeMirror.fold.indent,
-                        },
-                        styleActiveLine: true,
-                        extraKeys: { 
-                            "Ctrl-Space": "autocomplete",
-                            "Tab": function(cm) {
-                                if (cm.somethingSelected()) cm.indentSelection("add");
-                                else if (cm.getOption("indentWithTabs")) cm.replaceSelection("\t", "end", "+input");
-                                else cm.replaceSelection(Array(cm.getOption("indentUnit") + 1).join(" "), "end", "+input");
-                            },
-                            // NEW: Debug Helper Shortcut (Ctrl/Cmd + D)
-                            "Cmd-D": insertDebugPrint,
-                            "Ctrl-D": insertDebugPrint,
-                        },
-                        hintOptions: { completeSingle: false, container: document.body }
-                    });
-                    
-                    // Apply initial folding state
-                    file.fold.forEach(range => {
-                        if (range.from && range.to) {
-                             editorInstance.foldCode(CodeMirror.Pos(range.from.line, range.from.ch));
-                        }
-                    });
-
-                    // Attach change listener *once*
-                    editorInstance.on('change', () => {
-                        if (files[currentFileId].unsaved === false) {
-                            files[currentFileId].unsaved = true;
-                            renderTabs();
-                        }
-                        // Throttle auto-save to only run after a brief pause
-                        if (this.saveTimer) clearTimeout(this.saveTimer);
-                        this.saveTimer = setTimeout(saveFiles, 1000);
-                    });
+                // If no current file, set to the first one
+                if (!currentFileId || !files[currentFileId]) {
+                    currentFileId = Object.keys(files)[0];
+                    currentFileName = files[currentFileId].name;
                 }
             }
 
-            function renderTabs() {
-                tabBar.innerHTML = '';
-                
-                fileOrder.forEach(fileId => {
-                    const file = files[fileId];
-                    if (!file) return;
-
-                    const tab = document.createElement('button');
-                    tab.classList.add('tab');
-                    tab.setAttribute('data-file-id', fileId);
-                    
-                    const tabNameSpan = document.createElement('span');
-                    tabNameSpan.classList.add('tab-name');
-                    tabNameSpan.textContent = file.name;
-                    tabNameSpan.title = file.name;
-
-                    if (file.unsaved) {
-                        tabNameSpan.classList.add('unsaved');
-                    }
-                    
-                    tab.appendChild(tabNameSpan);
-
-                    if (fileId !== 'main') {
-                        const closeButton = document.createElement('span');
-                        closeButton.classList.add('tab-close');
-                        closeButton.innerHTML = '×';
-                        closeButton.title = 'Delete File';
-                        closeButton.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            deleteFile(fileId);
-                        });
-                        tab.appendChild(closeButton);
-                    }
-
-                    if (fileId === currentFileId) {
-                        tab.classList.add('active');
-                    }
-                    tabBar.appendChild(tab);
-                });
-                
-                applySortable();
-            }
-            
-            function applySortable() {
-                // Initialize SortableJS for drag-and-drop
-                Sortable.create(tabBar, {
-                    animation: 250,
-                    draggable: '.tab',
-                    filter: '#add-tab-button',
-                    onUpdate: function (evt) {
-                        const newOrder = Array.from(tabBar.children)
-                                              .map(el => el.getAttribute('data-file-id'))
-                                              .filter(id => id);
-                        
-                        fileOrder = newOrder;
-                        saveFiles();
-                    }
-                });
+            function saveSettings() {
+                const settings = {
+                    theme: body.getAttribute('data-theme'),
+                    fontSize: getComputedStyle(body).getPropertyValue('--code-font-size')
+                };
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
             }
 
-
-            // --- 3. FILE MANAGEMENT & TAB SWITCHING ---
-
-            tabBar.addEventListener('click', (e) => {
-                const target = e.target.closest('.tab');
-                if (target && !e.target.classList.contains('tab-close')) {
-                    const newFileId = target.getAttribute('data-file-id');
-                    
-                    if (newFileId === currentFileId) return;
-
-                    // 1. Save content and folding state of the file we are leaving.
-                    if (editorInstance) {
-                        files[currentFileId].code = editorInstance.getValue();
-                        files[currentFileId].unsaved = false;
-                        files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
-                    }
-
-                    // 2. Update the state and UI
-                    currentFileId = newFileId;
-                    renderTabs();
-                    
-                    // 3. Load the content for the NEW file.
-                    initializeEditor(currentFileId); 
-                    saveFiles(); // Save global state
+            function loadSettings() {
+                const savedSettings = localStorage.getItem(SETTINGS_KEY);
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    body.setAttribute('data-theme', settings.theme);
+                    body.style.setProperty('--code-font-size', settings.fontSize);
                 }
-            });
-            
-            const addTabButton = document.getElementById('add-tab-button');
-            let fileCounter = 1;
-            addTabButton.addEventListener('click', () => {
-                const newFileId = `file${Date.now()}`;
-                const newFileName = `dragomir${fileCounter++}.py`;
-
-                if (editorInstance) {
-                    files[currentFileId].code = editorInstance.getValue();
-                    files[currentFileId].unsaved = false;
-                    files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
-                }
-
-                files[newFileId] = { name: newFileName, code: `print("Dragomir's World!")`, unsaved: true, fold: [] };
-
-                currentFileId = newFileId;
-                fileOrder.push(newFileId);
-                renderTabs();
-                initializeEditor(currentFileId);
-                saveFiles();
-            });
-
-            function deleteFile(fileIdToDelete) {
-                if (!confirm(`Are you sure you want to delete ${files[fileIdToDelete].name}?`)) return;
-
-                delete files[fileIdToDelete];
-                
-                const index = fileOrder.indexOf(fileIdToDelete);
-                if (index > -1) {
-                    fileOrder.splice(index, 1);
-                }
-                
-                if (fileIdToDelete === currentFileId) {
-                    currentFileId = fileOrder[0];
-                    initializeEditor(currentFileId);
-                }
-
-                renderTabs();
-                saveFiles();
-            }
-            
-            // --- 4. DEBUGGING HELPER (Ctrl/Cmd + D) ---
-            function insertDebugPrint(cm) {
-                const selection = cm.getSelection();
-                const cursor = cm.getCursor();
-                const line = cursor.line;
-                
-                const variable = selection.trim() || cm.getLine(line).trim();
-                if (!variable) return;
-
-                const printStatement = `print(f"[DEBUG] ${variable}: {${variable}}")`;
-                
-                // If a variable is selected, insert the print statement on the next line.
-                cm.replaceSelection(printStatement, "start");
-                cm.replaceRange("\n", {line: line + 1, ch: 0});
-                
-                // Move cursor to the new line
-                cm.setCursor(line + 1, printStatement.length);
             }
 
-            // --- 5. GLOBAL SEARCH AND REPLACE ---
-            const searchModal = document.getElementById('search-modal');
-            const searchInput = document.getElementById('search-input');
-            const replaceInput = document.getElementById('replace-input');
-            const findButton = document.getElementById('find-all-button');
-            const replaceButton = document.getElementById('replace-all-button');
-            const resultsList = document.getElementById('search-results-list');
-            const searchSummary = document.getElementById('search-summary');
+            // --- 4. SETTINGS MODAL LOGIC ---
             
-            let searchResults = [];
-
-            document.getElementById('search-button').addEventListener('click', () => {
-                searchModal.style.display = searchModal.style.display === 'flex' ? 'none' : 'flex';
-                if (searchModal.style.display === 'flex') {
-                    searchInput.focus();
-                }
-            });
-
-            // Global Search Shortcut
-            document.addEventListener('keydown', (e) => {
-                if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'F') {
-                    e.preventDefault();
-                    searchModal.style.display = searchModal.style.display === 'flex' ? 'none' : 'flex';
-                    if (searchModal.style.display === 'flex') {
-                        searchInput.focus();
-                    }
-                }
-                if (searchModal.style.display === 'flex' && e.key === 'Escape') {
-                    searchModal.style.display = 'none';
-                }
-            });
-
-            findButton.addEventListener('click', () => {
-                const term = searchInput.value;
-                if (!term) return;
-
-                searchResults = [];
-                resultsList.innerHTML = '';
-                replaceButton.disabled = true;
-
-                // 1. Iterate through all files
-                for (const fileId of fileOrder) {
-                    const file = files[fileId];
-                    const regex = new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
-                    let match;
-                    let fileResultsCount = 0;
-
-                    while ((match = regex.exec(file.code)) !== null) {
-                        const lineIndex = file.code.substring(0, match.index).split('\n').length - 1;
-                        const lineContent = file.code.split('\n')[lineIndex].trim();
-
-                        searchResults.push({ fileId, fileName: file.name, line: lineIndex + 1, matchIndex: match.index, lineContent });
-                        
-                        // Display in results list
-                        const item = document.createElement('div');
-                        item.classList.add('search-result-item');
-                        item.innerHTML = `<span class="search-file-name">${file.name} (L${lineIndex + 1}):</span> ${lineContent}`;
-                        item.setAttribute('data-file-id', fileId);
-                        item.setAttribute('data-line', lineIndex + 1);
-
-                        // Click to switch file and navigate
-                        item.addEventListener('click', (e) => {
-                            if (fileId !== currentFileId) {
-                                // Save current file before switching
-                                files[currentFileId].code = editorInstance.getValue();
-                                files[currentFileId].unsaved = false;
-                                files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
-                                currentFileId = fileId;
-                                renderTabs();
-                                initializeEditor(currentFileId);
-                            }
-                            
-                            // Navigate to line
-                            const lineNumber = parseInt(e.currentTarget.getAttribute('data-line')) - 1;
-                            editorInstance.setCursor(lineNumber, 0);
-                            editorInstance.scrollIntoView({line: lineNumber, ch: 0}, 50);
-                            editorInstance.focus();
-                        });
-
-                        resultsList.appendChild(item);
-                        fileResultsCount++;
-                    }
-                }
-
-                searchSummary.textContent = `${searchResults.length} match(es) found in ${Object.keys(files).length} files.`;
-                if (searchResults.length > 0) {
-                    replaceButton.disabled = !replaceInput.value;
-                }
-            });
-
-            replaceInput.addEventListener('input', () => {
-                replaceButton.disabled = searchResults.length === 0 || !replaceInput.value;
-            });
-
-            replaceButton.addEventListener('click', () => {
-                if (!confirm(`Are you sure you want to replace ${searchResults.length} instances of "${searchInput.value}" with "${replaceInput.value}"?`)) {
-                    return;
-                }
-                
-                const term = searchInput.value;
-                const replacement = replaceInput.value;
-                const filesToUpdate = new Set();
-
-                // 1. Perform replacement in the data model
-                for (const fileId in files) {
-                    const file = files[fileId];
-                    const regex = new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
-                    
-                    if (file.code.match(regex)) {
-                        file.code = file.code.replace(regex, replacement);
-                        file.unsaved = true;
-                        filesToUpdate.add(fileId);
-                    }
-                }
-
-                // 2. Update UI and save
-                if (filesToUpdate.has(currentFileId)) {
-                    initializeEditor(currentFileId); // Re-render active editor
-                }
-                renderTabs();
-                saveFiles();
-                
-                // Re-run search to update summary
-                searchSummary.textContent = `Replacement complete. ${searchResults.length} instances replaced.`;
-                resultsList.innerHTML = '';
-                searchResults = [];
-                replaceButton.disabled = true;
-            });
-            
-            // --- 6. SETTINGS MODAL LOGIC ---
-            const settingsOverlay = document.getElementById('settings-overlay');
-            const themeSelect = document.getElementById('theme-select');
-            const accentPicker = document.getElementById('accent-color-picker');
-            const fontSizeSlider = document.getElementById('font-size-slider');
-            const fontSizeValue = document.getElementById('font-size-value');
-
-            document.getElementById('settings-button').addEventListener('click', () => {
-                // Set modal values to current settings
-                themeSelect.value = settings.theme;
-                accentPicker.value = settings.accent;
-                fontSizeSlider.value = settings.fontSize;
-                fontSizeValue.textContent = `${settings.fontSize}px`;
+            settingsButton.addEventListener('click', () => {
                 settingsOverlay.style.display = 'flex';
             });
 
-            document.getElementById('close-settings').addEventListener('click', () => {
+            closeSettingsButton.addEventListener('click', () => {
                 settingsOverlay.style.display = 'none';
             });
-            
-            // Close modal on click outside
-            settingsOverlay.addEventListener('click', (e) => {
-                if (e.target.id === 'settings-overlay') {
-                    settingsOverlay.style.display = 'none';
-                }
-            });
-            
-            // Event Handlers for changes
-            themeSelect.addEventListener('change', () => {
-                settings.theme = themeSelect.value;
-                cmTheme = settings.theme === 'light' ? 'default' : 'dracula';
-                applySettings();
+
+            darkModeButton.addEventListener('click', () => {
+                body.setAttribute('data-theme', 'dark');
+                if (editor) editor.setOption('theme', 'dracula');
                 saveSettings();
             });
 
-            accentPicker.addEventListener('change', () => {
-                settings.accent = accentPicker.value;
-                applySettings();
+            lightModeButton.addEventListener('click', () => {
+                body.setAttribute('data-theme', 'light');
+                if (editor) editor.setOption('theme', 'default');
                 saveSettings();
             });
 
-            fontSizeSlider.addEventListener('input', () => {
-                settings.fontSize = parseInt(fontSizeSlider.value);
-                cmFontSize = settings.fontSize;
-                fontSizeValue.textContent = `${settings.fontSize}px`;
-                applySettings();
+            fontSizeUpButton.addEventListener('click', () => {
+                let size = parseFloat(getComputedStyle(body).getPropertyValue('--code-font-size'));
+                size = Math.min(size + 0.1, 1.5);
+                body.style.setProperty('--code-font-size', `${size}rem`);
+                if (editor) editor.getWrapperElement().style.fontSize = `${size}rem`;
                 saveSettings();
             });
 
-
-            // --- 7. PYODIDE EXECUTION LOGIC (Updated for custom print) ---
-
-            document.getElementById('clear-output').addEventListener('click', () => {
-                outputConsole.innerHTML = '';
-                execTime.textContent = '';
+            fontSizeDownButton.addEventListener('click', () => {
+                let size = parseFloat(getComputedStyle(body).getPropertyValue('--code-font-size'));
+                size = Math.max(size - 0.1, 0.8);
+                body.style.setProperty('--code-font-size', `${size}rem`);
+                if (editor) editor.getWrapperElement().style.fontSize = `${size}rem`;
+                saveSettings();
             });
             
-            // Custom print function to handle colored output
-            function customPrint(message) {
-                const p = document.createElement('p');
-                p.style.margin = '0';
-                p.style.padding = '0';
-                p.style.whiteSpace = 'pre-wrap';
-                p.style.fontFamily = 'JetBrains Mono, monospace';
-
-                if (message.startsWith('[DEBUG]')) {
-                    p.classList.add('output-debug');
-                } else if (message.startsWith('Error:')) {
-                    p.classList.add('output-error');
-                } else {
-                    p.classList.add('output-log');
-                }
-                
-                p.textContent = message;
-                outputConsole.appendChild(p);
-                outputConsole.scrollTop = outputConsole.scrollHeight; // Auto-scroll
-            }
-
-
+            // --- 5. PYODIDE EXECUTION LOGIC ---
             runButton.addEventListener('click', async () => {
-                if (editorInstance) {
-                    files[currentFileId].code = editorInstance.getValue();
-                    files[currentFileId].unsaved = false;
-                    files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
-                    renderTabs();
-                }
-
-                const currentFileName = files[currentFileId].name;
-                outputConsole.innerHTML = ''; 
+                clearConsole();
                 runButton.disabled = true;
-                fileStatus.textContent = 'Running...';
-                execTime.textContent = '';
-                
-                // 1. Write ALL files to the Pyodide virtual file system (VFS)
-                for (const fileId of fileOrder) {
-                    const file = files[fileId];
-                    if (file) {
-                        pyodide.FS.writeFile(`/${file.name}`, file.code, { encoding: "utf8" });
-                    }
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 10));
-
-                // Route stdout to our custom print function
-                pyodide.setStdout({ batched: (message) => customPrint(message) });
-
-                // 2. Run the code from the active file and time it
+                fileStatus.textContent = 'Executing code...';
                 const startTime = performance.now();
+                
                 try {
-                    const codeToRun = pyodide.FS.readFile(`/${currentFileName}`, { encoding: "utf8" });
+                    // Create an in-memory file system for Pyodide
+                    pyodide.FS.mkdir('/workspace');
+                    pyodide.FS.mount(pyodide.FS.filesystems.InMemory, { root: '/'}, '/workspace');
+                    pyodide.FS.chdir('/workspace');
+                    
+                    // Write all files to the virtual file system
+                    for (const fileId in files) {
+                        const fileName = files[fileId].name;
+                        const fileContent = files[fileId].content;
+                        pyodide.FS.writeFile(fileName, fileContent);
+                    }
+                    
+                    // Redirect stdout and stderr to our custom print function
+                    pyodide.setStdout({
+                        isatty: true,
+                        write: (message) => customPrint(message)
+                    });
+                    
+                    pyodide.setStderr({
+                        isatty: true,
+                        write: (message) => customPrint(message)
+                    });
+
+                    // Get the code to run from the current active file
+                    const codeToRun = pyodide.FS.readFile(currentFileName, { encoding: "utf8" });
                     
                     await pyodide.runPythonAsync(codeToRun);
                     
@@ -1165,24 +730,45 @@
                 }
             });
 
-            // --- 8. FINAL INITIALIZATION ---
+            // --- 6. FINAL INITIALIZATION ---
             
-            loadSettings(); // Load theme/font first
-            loadFiles();
-            renderTabs();
+            // Check for existing consent
+            const hasConsent = localStorage.getItem(CONSENT_KEY) === 'true';
+
+            if (hasConsent) {
+                // If consent is found, hide the overlay and start initialization
+                consentOverlay.style.display = 'none';
+                initializeApp();
+            } else {
+                // If no consent, keep the overlay visible and set up the accept button
+                consentOverlay.style.display = 'flex'; // Ensure it's visible on first load
+                loadingOverlay.style.display = 'none'; // Hide the loading screen
+            }
             
-            try {
-                fileStatus.textContent = 'Loading interpreter...';
-                pyodide = await loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
-                });
-                loadingOverlay.style.display = 'none';
-                runButton.disabled = false;
-                initializeEditor(currentFileId);
-                fileStatus.textContent = 'Ready.';
-            } catch (error) {
-                loadingOverlay.innerHTML = `<p style="color:var(--error-color);">Failed to load Python environment. Check your connection.</p>`;
-                console.error(error);
+            acceptConsentButton.addEventListener('click', () => {
+                localStorage.setItem(CONSENT_KEY, 'true');
+                consentOverlay.style.display = 'none';
+                initializeApp();
+            });
+
+            async function initializeApp() {
+                loadSettings(); // Load theme/font first
+                loadFiles();
+                renderTabs();
+                
+                try {
+                    fileStatus.textContent = 'Loading interpreter...';
+                    pyodide = await loadPyodide({
+                        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
+                    });
+                    loadingOverlay.style.display = 'none';
+                    runButton.disabled = false;
+                    initializeEditor(currentFileId);
+                    fileStatus.textContent = 'Ready.';
+                } catch (error) {
+                    loadingOverlay.innerHTML = `<p style="color:var(--error-color);">Failed to load Python environment. Check your connection.</p>`;
+                    console.error(error);
+                }
             }
         });
     </script>
