@@ -1187,7 +1187,7 @@
         });
     </script>
 
-    <!-- Cookies & ToS Banner -->
+   <!-- Cookies & ToS Banner -->
 <div id="consent-banner" style="
     position: fixed;
     bottom: 20px;
@@ -1197,9 +1197,9 @@
     color: var(--text-color);
     padding: 15px 20px;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
     display: none;
-    z-index: 3000;
+    z-index: 9999; /* higher than interpreter overlay */
     max-width: 90%;
     font-size: 0.9rem;
     text-align: center;
@@ -1226,9 +1226,21 @@
         const acceptBtn = document.getElementById("accept-consent");
         const CONSENT_KEY = "userConsentGiven";
 
-        if (!localStorage.getItem(CONSENT_KEY)) {
-            banner.style.display = "block";
+        // Only show after interpreter overlay disappears
+        const loadingOverlay = document.getElementById("loading-overlay");
+
+        function tryShowBanner() {
+            if (!localStorage.getItem(CONSENT_KEY) && loadingOverlay.style.display === "none") {
+                banner.style.display = "block";
+            }
         }
+
+        // Try to show when DOM ready
+        tryShowBanner();
+
+        // Also observe overlay hiding (interpreter loaded)
+        const observer = new MutationObserver(() => tryShowBanner());
+        observer.observe(loadingOverlay, { attributes: true, attributeFilter: ["style"] });
 
         acceptBtn.addEventListener("click", () => {
             localStorage.setItem(CONSENT_KEY, "true");
