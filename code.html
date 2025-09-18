@@ -451,7 +451,7 @@
     </div>
     
     <!-- NEW: CONSENT MODAL FOR COOKIES AND TOS -->
-    <div id="consent-overlay" class="modal-overlay" style="display: flex;">
+    <div id="consent-overlay" class="modal-overlay">
         <div class="modal-content">
             <h3>Welcome to Dragomir's Editor</h3>
 
@@ -732,27 +732,25 @@
 
             // --- 6. FINAL INITIALIZATION ---
             
-            // Check for existing consent
             const hasConsent = localStorage.getItem(CONSENT_KEY) === 'true';
 
             if (hasConsent) {
                 // If consent is found, hide the overlay and start initialization
-                consentOverlay.style.display = 'none';
                 initializeApp();
             } else {
-                // If no consent, keep the overlay visible and set up the accept button
-                consentOverlay.style.display = 'flex'; // Ensure it's visible on first load
-                loadingOverlay.style.display = 'none'; // Hide the loading screen
+                // If no consent, hide the loading screen and show the consent modal
+                loadingOverlay.style.display = 'none';
+                consentOverlay.style.display = 'flex';
+                acceptConsentButton.addEventListener('click', () => {
+                    localStorage.setItem(CONSENT_KEY, 'true');
+                    consentOverlay.style.display = 'none';
+                    initializeApp();
+                });
             }
-            
-            acceptConsentButton.addEventListener('click', () => {
-                localStorage.setItem(CONSENT_KEY, 'true');
-                consentOverlay.style.display = 'none';
-                initializeApp();
-            });
 
             async function initializeApp() {
-                loadSettings(); // Load theme/font first
+                loadingOverlay.style.display = 'flex'; // Show loading screen again
+                loadSettings(); // Load theme/font
                 loadFiles();
                 renderTabs();
                 
