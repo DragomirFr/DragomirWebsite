@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragomir's Editor - Copyright</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0A0A10;
+            color: #E0E0E0;
+            overflow: hidden;
+        }
+
+        /* Royal blue glow effect for the card */
+        @keyframes royal-glow {
+            0%, 100% { box-shadow: 0 0 8px #4169E1, 0 0 16px #4169E1; }
+            50% { box-shadow: 0 0 24px #4169E1, 0 0 40px #4169E1; }
+        }
+
+        /* More dynamic background grid with a slight shimmer */
+        @keyframes grid-shimmer {
+            0% { background-position: 0 0; }
+            100% { background-position: -200% -200%; }
+        }
+
+        .animated-bg {
+            position: relative;
+            background: #0A0A10;
+            background-image: 
+                linear-gradient(to right, rgba(65, 105, 225, 0.15) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(65, 105, 225, 0.15) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: grid-shimmer 45s linear infinite;
+        }
+
+        .card {
+            background-color: rgba(16, 20, 26, 0.85);
+            border-radius: 1.5rem; /* Slightly more rounded */
+            backdrop-filter: blur(12px); /* Increased blur */
+            border: 1px solid #4169E1;
+            position: relative;
+            z-index: 10;
+            animation: royal-glow 4s infinite alternate;
+        }
+
+        /* Floating background orbs, changed color to match the theme */
+        .orb {
+            position: absolute;
+            background: radial-gradient(circle, rgba(65, 105, 225, 0.6), rgba(65, 105, 225, 0));
+            border-radius: 50%;
+            z-index: 0;
+            animation: float 20s infinite ease-in-out;
+            filter: blur(15px);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-70px) rotate(180deg); }
+        }
+
+        .orb-1 { width: 60px; height: 60px; top: 10%; left: 15%; animation-duration: 16s; }
+        .orb-2 { width: 90px; height: 90px; bottom: 8%; right: 10%; animation-duration: 22s; }
+        .orb-3 { width: 70px; height: 70px; top: 35%; right: 25%; animation-duration: 18s; }
+        .orb-4 { width: 50px; height: 50px; bottom: 25%; left: 30%; animation-duration: 20s; }
+        .orb-5 { width: 100px; height: 100px; top: 40%; left: 40%; animation-duration: 25s; }
+
+        /* Responsive typography */
+        @media (max-width: 640px) {
+            h1 { font-size: 2rem; }
+            p { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 animated-bg">
+    <!-- Floating orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+    <div class="orb orb-5"></div>
+
+    <!-- Main content container -->
+    <div class="max-w-xl mx-auto text-center card p-8 md:p-12 lg:p-16">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 text-white leading-tight">
+            The Code is Mine.
+        </h1>
+        <p class="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-300 leading-relaxed">
+            All intellectual property created and compiled within the domain of Dragomir's Editor belongs exclusively to Dragomir. By proceeding, you acknowledge and accept these terms.
+        </p>
+    </div>
+</body>
+</html>
