@@ -1186,5 +1186,56 @@
             }
         });
     </script>
+
+    <!-- Cookies & ToS Banner -->
+<div id="consent-banner" style="
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--main-bg-color);
+    color: var(--text-color);
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    display: none;
+    z-index: 3000;
+    max-width: 90%;
+    font-size: 0.9rem;
+    text-align: center;
+">
+    <p style="margin: 0 0 10px 0;">
+        We use cookies to improve your experience. By continuing, you agree to our 
+        <a href="/tos.html" style="color: var(--accent-color); text-decoration: underline;">Terms of Service</a> 
+        and <a href="/cookies.html" style="color: var(--accent-color); text-decoration: underline;">Cookies Policy</a>.
+    </p>
+    <button id="accept-consent" style="
+        background: var(--run-button-color);
+        border: none;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+    ">Accept</button>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const banner = document.getElementById("consent-banner");
+        const acceptBtn = document.getElementById("accept-consent");
+        const CONSENT_KEY = "userConsentGiven";
+
+        if (!localStorage.getItem(CONSENT_KEY)) {
+            banner.style.display = "block";
+        }
+
+        acceptBtn.addEventListener("click", () => {
+            localStorage.setItem(CONSENT_KEY, "true");
+            banner.style.display = "none";
+        });
+    });
+</script>
+
 </body>
 </html>
