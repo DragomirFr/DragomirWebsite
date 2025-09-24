@@ -8,71 +8,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, query, orderBy, where, getDocs } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-analytics.js";
-
-        // Global variables for Firebase configuration provided by the environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        let firebaseConfig = {};
-        try {
-            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        } catch (e) {
-            console.error("Failed to parse Firebase configuration:", e);
-        }
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let db;
-        let auth;
-        let userId = null;
-        let isAuthReady = false;
-        
-        // Function to create a message box instead of using alert()
-        function showMessage(message) {
-            const messageBox = document.getElementById('message-box');
-            messageBox.textContent = message;
-            messageBox.style.display = 'block';
-            setTimeout(() => {
-                messageBox.style.display = 'none';
-            }, 3000);
-        }
-
-        // --- Core Firebase Initialization and Auth ---
-        window.onload = async () => {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                getAnalytics(app); // For analytics, if needed.
-
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        isAuthReady = true;
-                        document.getElementById('user-id').textContent = `User ID: ${userId}`;
-                        document.getElementById('app-id').textContent = `App ID: ${appId}`;
-                        
-                        // Proceed with UI rendering and data fetching once authenticated
-                        renderTrackerUI();
-                    } else {
-                        isAuthReady = false;
-                        showMessage("Authentication state changed, but no user found.");
-                        document.getElementById('loading').textContent = 'Please wait while we set up the app...';
-                    }
-                });
-
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Firebase initialization or authentication failed:", error);
-                showMessage("Failed to initialize the app. Please check the console for details.");
-            }
-        };
+    <script>
+        // Use a consistent key for localStorage
+        const STORAGE_KEY = 'workout_tracker_data';
 
         // --- Date and UI Generation Logic ---
         function getRecentDates(count) {
@@ -94,28 +32,16 @@
         }
 
         function calculateStreak(workouts) {
-            if (workouts.length === 0) return 0;
-
-            // Sort workouts by date ascending
-            workouts.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            let currentStreak = 0;
-            let longestStreak = 0;
-            let lastDate = null;
-            let isTodayWorkout = workouts.some(w => getFormattedDate(new Date(w.date)) === getFormattedDate(new Date()));
+            if (Object.keys(workouts).length === 0) return 0;
 
             const today = new Date();
-            let streakEndDay = isTodayWorkout ? today : new Date(today);
-            if (!isTodayWorkout) {
-                streakEndDay.setDate(streakEndDay.getDate() - 1);
-            }
+            let streakEndDay = new Date(today);
+            let currentStreak = 0;
 
             let streakInProgress = true;
             while(streakInProgress) {
                 const formattedDate = getFormattedDate(streakEndDay);
-                const workoutForDay = workouts.find(w => w.date === formattedDate);
-                
-                if (workoutForDay && workoutForDay.workedOut) {
+                if (workouts[formattedDate]) {
                     currentStreak++;
                     streakEndDay.setDate(streakEndDay.getDate() - 1);
                 } else {
@@ -126,99 +52,91 @@
             return currentStreak;
         }
 
-
-        // --- Firestore Operations and Real-time Listening ---
-        async function renderTrackerUI() {
-            if (!isAuthReady || !userId) {
-                document.getElementById('loading').textContent = 'Authenticating user...';
-                return;
+        // --- Data Handling with localStorage ---
+        function loadData() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : {};
+            } catch (e) {
+                console.error("Error loading data from localStorage:", e);
+                return {};
             }
-            
-            document.getElementById('loading').style.display = 'none';
-            const daysContainer = document.getElementById('days-container');
-            daysContainer.innerHTML = '';
-            
-            const dates = getRecentDates(5);
-            const dataRef = collection(db, `artifacts/${appId}/users/${userId}/workouts`);
-            
-            // Set up a real-time listener for the last 5 days' workouts
-            const q = query(dataRef, where("date", "in", dates.map(getFormattedDate)));
-            
-            onSnapshot(q, async (snapshot) => {
-                const workouts = [];
-                snapshot.forEach((doc) => {
-                    workouts.push(doc.data());
-                });
-
-                // Update UI based on the latest data
-                daysContainer.innerHTML = ''; // Clear to prevent duplicates
-                dates.forEach(date => {
-                    const formattedDate = getFormattedDate(date);
-                    const dayData = workouts.find(w => w.date === formattedDate);
-                    const workedOut = dayData ? dayData.workedOut : false;
-                    
-                    const dayCard = document.createElement('div');
-                    dayCard.className = 'flex flex-col items-center p-6 bg-slate-800 rounded-xl shadow-lg hover:bg-slate-700 transition-colors duration-200 cursor-pointer';
-                    
-                    const dayLabel = document.createElement('span');
-                    dayLabel.className = 'text-lg font-semibold text-slate-300';
-                    dayLabel.textContent = getWeekday(date);
-
-                    const dateLabel = document.createElement('span');
-                    dateLabel.className = 'text-sm text-slate-500 mt-1';
-                    dateLabel.textContent = formattedDate;
-
-                    const checkboxContainer = document.createElement('label');
-                    checkboxContainer.className = 'flex items-center justify-center mt-4 cursor-pointer';
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.className = 'hidden';
-                    checkbox.checked = workedOut;
-
-                    const customCheckbox = document.createElement('div');
-                    customCheckbox.className = `w-8 h-8 rounded-full border-2 border-slate-600 transition-all duration-300 flex items-center justify-center ${workedOut ? 'bg-emerald-500 border-emerald-500 scale-110' : 'bg-slate-700'}`;
-                    customCheckbox.innerHTML = `
-                        <svg class="w-5 h-5 text-white transition-opacity duration-300 ${workedOut ? 'opacity-100' : 'opacity-0'}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                    `;
-
-                    // Add event listener to handle changes
-                    checkbox.addEventListener('change', async () => {
-                        try {
-                            const workoutDocRef = doc(db, `artifacts/${appId}/users/${userId}/workouts`, formattedDate);
-                            await setDoc(workoutDocRef, {
-                                date: formattedDate,
-                                workedOut: checkbox.checked,
-                                timestamp: new Date()
-                            }, { merge: true });
-                        } catch (e) {
-                            console.error("Error updating document: ", e);
-                            showMessage("Could not save your progress. Please try again.");
-                            // Revert the checkbox state on error
-                            checkbox.checked = !checkbox.checked;
-                        }
-                    });
-
-                    checkboxContainer.appendChild(checkbox);
-                    checkboxContainer.appendChild(customCheckbox);
-                    
-                    dayCard.appendChild(dayLabel);
-                    dayCard.appendChild(dateLabel);
-                    dayCard.appendChild(checkboxContainer);
-                    daysContainer.appendChild(dayCard);
-                });
-
-                // Get all workouts for streak calculation, not just the last 5
-                const allWorkoutsSnapshot = await getDocs(dataRef);
-                const allWorkouts = [];
-                allWorkoutsSnapshot.forEach(d => allWorkouts.push(d.data()));
-
-                const currentStreak = calculateStreak(allWorkouts);
-                document.getElementById('streak-count').textContent = currentStreak;
-            });
         }
+
+        function saveData(data) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                updateUI();
+            } catch (e) {
+                console.error("Error saving data to localStorage:", e);
+            }
+        }
+        
+        // --- Core UI Rendering and Event Handling ---
+        function updateUI() {
+            const daysContainer = document.getElementById('days-container');
+            const storedWorkouts = loadData();
+            const dates = getRecentDates(5);
+            
+            daysContainer.innerHTML = ''; // Clear to prevent duplicates
+
+            dates.forEach(date => {
+                const formattedDate = getFormattedDate(date);
+                const workedOut = storedWorkouts[formattedDate] || false;
+                
+                const dayCard = document.createElement('div');
+                dayCard.className = 'flex flex-col items-center p-6 bg-slate-800 rounded-xl shadow-lg hover:bg-slate-700 transition-colors duration-200 cursor-pointer';
+                
+                const dayLabel = document.createElement('span');
+                dayLabel.className = 'text-lg font-semibold text-slate-300';
+                dayLabel.textContent = getWeekday(date);
+
+                const dateLabel = document.createElement('span');
+                dateLabel.className = 'text-sm text-slate-500 mt-1';
+                dateLabel.textContent = formattedDate;
+
+                const checkboxContainer = document.createElement('label');
+                checkboxContainer.className = 'flex items-center justify-center mt-4 cursor-pointer';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'hidden';
+                checkbox.checked = workedOut;
+
+                const customCheckbox = document.createElement('div');
+                customCheckbox.className = `w-8 h-8 rounded-full border-2 border-slate-600 transition-all duration-300 flex items-center justify-center ${workedOut ? 'bg-emerald-500 border-emerald-500 scale-110' : 'bg-slate-700'}`;
+                customCheckbox.innerHTML = `
+                    <svg class="w-5 h-5 text-white transition-opacity duration-300 ${workedOut ? 'opacity-100' : 'opacity-0'}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                `;
+
+                // Add event listener to handle changes
+                checkbox.addEventListener('change', () => {
+                    const updatedWorkouts = loadData();
+                    updatedWorkouts[formattedDate] = checkbox.checked;
+                    saveData(updatedWorkouts);
+                });
+
+                checkboxContainer.appendChild(checkbox);
+                checkboxContainer.appendChild(customCheckbox);
+                
+                dayCard.appendChild(dayLabel);
+                dayCard.appendChild(dateLabel);
+                dayCard.appendChild(checkboxContainer);
+                daysContainer.appendChild(dayCard);
+            });
+            
+            const currentStreak = calculateStreak(storedWorkouts);
+            document.getElementById('streak-count').textContent = currentStreak;
+        }
+
+        // Initialize UI on window load
+        window.onload = () => {
+            const loading = document.getElementById('loading');
+            if (loading) loading.style.display = 'none';
+            updateUI();
+        };
     </script>
     <style>
         body {
@@ -263,11 +181,6 @@
 
         <div id="days-container" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
             <!-- Day cards will be inserted here by JavaScript -->
-        </div>
-
-        <div class="w-full text-center text-xs text-slate-500 mt-4 space-y-1">
-            <p id="user-id" class="break-all">User ID: </p>
-            <p id="app-id" class="break-all">App ID: </p>
         </div>
     </div>
 </body>
