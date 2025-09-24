@@ -148,7 +148,7 @@
       }
     }
     fetchWeather();
-    setInterval(fetchWeather, 600000);
+    setInterval(fetchWeather, 60);
 
     // Quote
     async function fetchDailyQuote() {
@@ -159,11 +159,12 @@
         document.getElementById('quote-text').textContent = `"${data[0].q}"`;
         document.getElementById('quote-author').textContent = `- ${data[0].a}`;
       } catch {
-        document.getElementById('quote-text').textContent = `"It's not over until I win!"`;
-        document.getElementById('quote-author').textContent = "- Eesah Litt";
+        document.getElementById('quote-text').textContent = `"When you durst do it, then you were a man."`;
+        document.getElementById('quote-author').textContent = "- Lady Macbeth x Oskar Kozub";
       }
     }
     fetchDailyQuote();
   </script>
 </body>
 </html>
+
