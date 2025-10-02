@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IPTV Player UI — Single File</title>
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#7c3aed;--muted:#94a3b8;--glass:rgba(255,255,255,0.04)}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{background:linear-gradient(180deg,#071024 0%,#071428 40%,#081026 100%);color:#e6eef8}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px}
+    .player-shell{width:100%;max-width:1200px;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(2,6,23,0.7);background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border:1px solid rgba(255,255,255,0.03)}
+    .left{background:linear-gradient(180deg, rgba(12,18,30,0.6), rgba(5,8,12,0.35));padding:18px 18px 22px;display:flex;flex-direction:column;gap:12px}
+    .header{display:flex;align-items:center;gap:12px}
+    .logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#334155);display:flex;align-items:center;justify-content:center;font-weight:700}
+    .title{font-size:18px;font-weight:600}
+    .subtitle{color:var(--muted);font-size:13px}
+
+    .controls-row{display:flex;gap:10px;align-items:center}
+    .input{flex:1;min-width:0}
+    input[type=text],textarea,select{width:100%;padding:10px 12px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:inherit;font-size:14px}
+    button.btn{background:linear-gradient(90deg,var(--accent),#0ea5a5);border:none;padding:10px 12px;border-radius:10px;color:white;cursor:pointer;font-weight:600}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+
+    .video-container{position:relative;background:#000;height:56vh;min-height:280px;border-radius:12px;overflow:hidden}
+    video{width:100%;height:100%;background:#000;object-fit:contain}
+
+    .big-controls{display:flex;align-items:center;gap:10px;padding:12px}
+    .icon-btn{background:rgba(255,255,255,0.03);border:none;padding:10px;border-radius:10px;cursor:pointer}
+    .seek{display:flex;align-items:center;gap:8px}
+    .time{font-family:monospace;color:var(--muted);font-size:13px}
+    .progress{flex:1;height:8px;background:rgba(255,255,255,0.03);border-radius:8px;position:relative;overflow:hidden}
+    .progress > .fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#06b6d4)}
+
+    .right{padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);display:flex;flex-direction:column;gap:12px}
+    .meta{display:flex;flex-direction:column;gap:8px}
+    .meta .row{display:flex;justify-content:space-between;color:var(--muted);font-size:13px}
+    .playlist{max-height:220px;overflow:auto;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01)}
+    .pl-item{padding:8px;border-radius:8px;cursor:pointer}
+    .pl-item:hover{background:rgba(255,255,255,0.02)}
+
+    .footer-note{color:var(--muted);font-size:13px;padding:12px;text-align:center}
+
+    @media (max-width:900px){.player-shell{border-radius:12px}.left,.right{padding:12px}.video-container{height:44vh}}
+    @media (max-width:700px){.player-shell{max-width:100%}.right{display:none}}
+  </style>
+  <!-- hls.js for m3u8 support on non-Safari browsers -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="player-shell" role="application" aria-label="IPTV player UI">
+      <div style="display:flex;gap:0;flex-direction:row;">
+        <div class="left" style="flex:1;">
+          <div class="header">
+            <div class="logo">IP</div>
+            <div>
+              <div class="title">IPTV Player — UI Mock</div>
+              <div class="subtitle">Paste a stream URL (m3u8/mp4) or a full M3U playlist.</div>
+            </div>
+          </div>
+
+          <div class="controls-row">
+            <div class="input">
+              <input id="streamInput" type="text" placeholder="Paste stream URL or M3U text here" aria-label="stream input">
+            </div>
+            <button id="loadBtn" class="btn">Load</button>
+            <button id="parseBtn" class="ghost">Parse M3U</button>
+          </div>
+
+          <div class="video-container" id="videoShell">
+            <video id="player" playsinline controls crossorigin="anonymous"></video>
+          </div>
+
+          <div class="big-controls">
+            <button id="playPause" class="icon-btn">▶️</button>
+            <button id="skipBack" class="icon-btn">⟲ 10s</button>
+            <button id="skipForward" class="icon-btn">10s ⟳</button>
+
+            <div class="seek">
+              <div class="time" id="curTime">00:00</div>
+              <div class="progress" id="progressBar" role="slider" aria-valuemin="0" aria-valuemax="100">
+                <div class="fill" id="progressFill"></div>
+              </div>
+              <div class="time" id="durTime">00:00</div>
+            </div>
+
+            <select id="rate" style="width:90px;border-radius:8px;padding:8px">
+              <option value="0.5">0.5×</option>
+              <option value="0.75">0.75×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.25">1.25×</option>
+              <option value="1.5">1.5×</option>
+              <option value="2">2×</option>
+            </select>
+
+            <input id="volume" type="range" min="0" max="1" step="0.01" value="1" style="width:120px">
+
+            <button id="pipBtn" class="icon-btn">⧉</button>
+            <button id="fsBtn" class="icon-btn">⤢</button>
+          </div>
+
+          <div class="footer-note">Keyboard shortcuts: Space=play/pause · ←/→ seek 10s · up/down volume</div>
+        </div>
+
+        <div class="right" style="width:320px;border-left:1px solid rgba(255,255,255,0.02)">
+          <div style="padding:6px 0 0 0">
+            <div class="meta">
+              <div class="row"><div>Source</div><div id="srcLabel" style="color:#cbd5e1;">—</div></div>
+              <div class="row"><div>Format</div><div id="fmtLabel" style="color:#cbd5e1;">—</div></div>
+              <div class="row"><div>Duration</div><div id="durLabel" style="color:#cbd5e1;">—</div></div>
+            </div>
+
+            <h4 style="margin:12px 0 6px 0">Playlist</h4>
+            <div class="playlist" id="playlist"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Utilities
+    const el = id => document.getElementById(id)
+    const player = el('player')
+    const loadBtn = el('loadBtn')
+    const parseBtn = el('parseBtn')
+    const streamInput = el('streamInput')
+    const playPause = el('playPause')
+    const skipBack = el('skipBack')
+    const skipForward = el('skipForward')
+    const progressFill = el('progressFill')
+    const progressBar = el('progressBar')
+    const curTime = el('curTime')
+    const durTime = el('durTime')
+    const rate = el('rate')
+    const volume = el('volume')
+    const pipBtn = el('pipBtn')
+    const fsBtn = el('fsBtn')
+    const playlistEl = el('playlist')
+    const srcLabel = el('srcLabel')
+    const fmtLabel = el('fmtLabel')
+    const durLabel = el('durLabel')
+
+    let hls = null
+    let playlist = []
+
+    function humanTime(s){
+      if (!isFinite(s)) return '–'
+      s = Math.floor(s)
+      const hh = Math.floor(s/3600)
+      const mm = Math.floor((s%3600)/60).toString().padStart(2,'0')
+      const ss = (s%60).toString().padStart(2,'0')
+      return hh? `${hh}:${mm}:${ss}` : `${mm}:${ss}`
+    }
+
+    function setSource(url){
+      // Cleanup previous HLS instance
+      if (hls){ hls.destroy(); hls = null }
+      const lower = url.trim().toLowerCase()
+      srcLabel.textContent = url
+      if (lower.endsWith('.m3u8')){
+        // Use hls.js when available
+        if (Hls && Hls.isSupported()){
+          hls = new Hls()
+          hls.loadSource(url)
+          hls.attachMedia(player)
+          hls.on(Hls.Events.MANIFEST_PARSED, ()=>{ player.play().catch(()=>{}); fmtLabel.textContent = 'HLS (.m3u8)'; })
+        } else {
+          // Safari supports HLS natively
+          player.src = url
+          player.play().catch(()=>{})
+          fmtLabel.textContent = 'HLS (.m3u8)'
+        }
+      } else if (lower.startsWith('#extm3u') || lower.includes('\n')){
+        // raw M3U text pasted — parse
+        parseM3U(url)
+        return
+      } else {
+        // assume a regular file / direct stream (mp4, ts, etc.)
+        player.src = url
+        player.play().catch(()=>{})
+        fmtLabel.textContent = url.split('.').pop().toUpperCase()
+      }
+    }
+
+    function parseM3U(text){
+      // Very small M3U parser: collects title and uri pairs
+      const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean)
+      const entries = []
+      let lastTitle = ''
+      for (const line of lines){
+        if (line.startsWith('#EXTINF:')){
+          const comma = line.indexOf(',')
+          lastTitle = comma>-1? line.slice(comma+1).trim() : line
+        } else if (!line.startsWith('#')){
+          entries.push({title: lastTitle || line, uri: line})
+          lastTitle = ''
+        }
+      }
+      playlist = entries
+      renderPlaylist()
+      if (entries.length) setSource(entries[0].uri)
+    }
+
+    function renderPlaylist(){
+      playlistEl.innerHTML = ''
+      playlist.forEach((it, idx)=>{
+        const div = document.createElement('div')
+        div.className = 'pl-item'
+        div.tabIndex = 0
+        div.innerHTML = `<div style=\"display:flex;justify-content:space-between\"><div style=\"font-weight:600\">${it.title || 'Channel '+(idx+1)}</div><div style=\"color:var(--muted)\">${it.uri.split('/').pop()||''}</div></div>`
+        div.addEventListener('click', ()=> setSource(it.uri))
+        div.addEventListener('keydown', e=>{ if (e.key==='Enter') setSource(it.uri) })
+        playlistEl.appendChild(div)
+      })
+    }
+
+    loadBtn.addEventListener('click', ()=>{
+      const val = streamInput.value.trim()
+      if (!val) return alert('Paste a stream URL or M3U text into the input first.')
+      // If it looks like a URL fetch remote M3U? For security, we avoid fetching external resources.
+      // We'll treat the input as either a URL or raw M3U text.
+      setSource(val)
+    })
+
+    parseBtn.addEventListener('click', ()=>{
+      const val = streamInput.value.trim()
+      if (!val) return alert('Paste a full M3U playlist (text) into the input to parse it.')
+      parseM3U(val)
+    })
+
+    // Play/pause toggle
+    playPause.addEventListener('click', ()=>{
+      if (player.paused) player.play(); else player.pause();
+    })
+    player.addEventListener('play', ()=> playPause.textContent = '⏸')
+    player.addEventListener('pause', ()=> playPause.textContent = '▶️')
+
+    // Skip
+    skipBack.addEventListener('click', ()=> player.currentTime = Math.max(0, player.currentTime - 10))
+    skipForward.addEventListener('click', ()=> player.currentTime = Math.min(player.duration||Infinity, player.currentTime + 10))
+
+    // Progress updates
+    player.addEventListener('timeupdate', ()=>{
+      const pct = (player.currentTime / (player.duration||1)) * 100
+      progressFill.style.width = (isFinite(pct)? pct: 0) + '%'
+      curTime.textContent = humanTime(player.currentTime)
+      durTime.textContent = humanTime(player.duration)
+      durLabel.textContent = humanTime(player.duration)
+    })
+
+    // Click to seek
+    progressBar.addEventListener('click', e =>{
+      const r = progressBar.getBoundingClientRect()
+      const pct = (e.clientX - r.left)/r.width
+      if (isFinite(player.duration)) player.currentTime = pct * player.duration
+    })
+
+    // Rate & volume
+    rate.addEventListener('change', ()=> player.playbackRate = parseFloat(rate.value))
+    volume.addEventListener('input', ()=> player.volume = parseFloat(volume.value))
+
+    // PIP
+    pipBtn.addEventListener('click', async ()=>{
+      if (document.pictureInPictureElement) await document.exitPictureInPicture().catch(()=>{})
+      else await player.requestPictureInPicture().catch(()=>alert('Picture-in-Picture not available'))
+    })
+
+    // Fullscreen
+    fsBtn.addEventListener('click', ()=>{
+      const shell = document.querySelector('.player-shell')
+      if (!document.fullscreenElement) shell.requestFullscreen().catch(()=>{})
+      else document.exitFullscreen().catch(()=>{})
+    })
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e=>{
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      if (e.code === 'Space'){ e.preventDefault(); if (player.paused) player.play(); else player.pause() }
+      if (e.key === 'ArrowLeft') player.currentTime = Math.max(0, player.currentTime - 10)
+      if (e.key === 'ArrowRight') player.currentTime = Math.min(player.duration||Infinity, player.currentTime + 10)
+      if (e.key === 'ArrowUp') player.volume = Math.min(1, player.volume + 0.05), volume.value = player.volume
+      if (e.key === 'ArrowDown') player.volume = Math.max(0, player.volume - 0.05), volume.value = player.volume
+    })
+
+    // When a source is set using .src (non-hls), ensure metadata updates
+    player.addEventListener('loadedmetadata', ()=>{
+      fmtLabel.textContent = (player.currentSrc||'').split('.').pop().toUpperCase()
+    })
+
+    // UX: drag & drop url or M3U file
+    window.addEventListener('dragover', e=> e.preventDefault())
+    window.addEventListener('drop', e=>{
+      e.preventDefault()
+      const f = e.dataTransfer.files && e.dataTransfer.files[0]
+      if (f){
+        const reader = new FileReader()
+        reader.onload = ()=>{
+          streamInput.value = reader.result
+        }
+        reader.readAsText(f)
+      } else {
+        const text = e.dataTransfer.getData('text')
+        if (text) streamInput.value = text
+      }
+    })
+
+    // Helpful note about CORS
+    const corsNote = () => console.info('Note: many IPTV providers block cross-origin requests. If a stream fails to play in the browser, try using a CORS proxy, a native app, or test in Safari for HLS (native).')
+    corsNote()
+  </script>
+</body>
+</html>
