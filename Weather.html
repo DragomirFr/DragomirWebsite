@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Northampton 5-Day Forecast Pro</title>
+    <!-- Load Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a polished, dark aesthetic */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Deep Charcoal Background */
+            color: #e5e7eb; /* Light text */
+            transition: all 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align content to the top */
+            padding: 1rem 0; /* Add vertical padding for mobile view */
+        }
+
+        .weather-card-container {
+            max-width: 1200px;
+            width: 95%;
+            padding: 1rem; /* Smaller padding on mobile */
+            background-color: #161b22; /* Lighter container base */
+            border-radius: 1.5rem; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        /* Responsive adjustments for the container on larger screens */
+        @media (min-width: 768px) {
+            .weather-card-container {
+                padding: 2rem;
+                margin-top: 2rem;
+            }
+        }
+
+        /* Styling for Daily Cards */
+        .daily-card {
+            background: #1f2731; /* Card background */
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s;
+            cursor: pointer;
+            border: 2px solid transparent;
+            min-height: 180px; /* Ensure uniform height */
+        }
+
+        .daily-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 5px 15px rgba(0, 150, 255, 0.2);
+            border-color: #3b82f6; /* Blue border on hover */
+        }
+        
+        .daily-card.active {
+            border-color: #3b82f6;
+            background: #252c38;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        /* Hourly Detail Panel Styling */
+        #hourly-detail {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+            background: #11151a; /* Even darker background for detail */
+            border-radius: 1rem;
+        }
+        #hourly-detail.visible {
+            max-height: 500px; /* Large enough to accommodate content */
+            padding: 1rem 0; /* Padding around title/scroll area */
+        }
+
+        /* Styling for Hourly Scroll Container */
+        .hourly-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            padding: 0.5rem 0.25rem 1rem 0.25rem; /* Add padding for visual space on edges and bottom for scrollbar */
+        }
+
+        /* Ensure hourly cards stay together in a row */
+        .hourly-card {
+            min-width: 110px; /* Fixed width for small cards */
+            margin-right: 0.75rem;
+            background-color: #1f2731;
+            padding: 0.75rem 0.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid #2d3748;
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            border: 4px solid rgba(59, 130, 246, 0.2);
+            border-top: 4px solid #3b82f6; 
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="weather-card-container">
+        <header class="text-center mb-6 md:mb-8">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-blue-400 mb-1 tracking-wider">
+                Northampton, UK 
+            </h1>
+            <p class="text-md sm:text-lg text-gray-400 font-light">
+                Extended Forecast Explorer
+            </p>
+        </header>
+
+        <!-- Daily Forecast Cards Grid (Responsive: 2 cols on mobile, 5 on tablet/desktop) -->
+        <div id="daily-forecast-output" 
+             class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            
+            <div id="loading" class="col-span-2 md:col-span-5 flex justify-center items-center py-12">
+                <div class="spinner"></div>
+                <span class="ml-4 text-gray-400">Loading forecast data...</span>
+            </div>
+        </div>
+        
+        <!-- Hourly Detail Panel -->
+        <div id="hourly-detail" class="mt-6">
+            <h2 id="hourly-title" class="text-xl font-bold px-4 md:px-6 text-blue-300">
+                <!-- Title will be dynamically updated -->
+            </h2>
+            <!-- HORIZONTAL SCROLL CONTAINER -->
+            <div id="hourly-output" class="hourly-scroll flex flex-nowrap mt-4">
+                <!-- Hourly cards will be inserted here -->
+            </div>
+        </div>
+
+        <footer class="text-center text-xs text-gray-600 mt-8 pt-4 border-t border-gray-800">
+            Data provided by Open-Meteo.com
+        </footer>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // Coordinates for Northampton, UK
+        const LATITUDE = 52.2405;
+        const LONGITUDE = -0.8970;
+        
+        // API endpoint fetching DAILY (max/min temp) and HOURLY (temp, precipitation, code) data
+        const API_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&daily=weather_code,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weather_code,precipitation&forecast_days=7&timezone=Europe%2FLondon`;
+        
+        const dailyOutputDiv = document.getElementById('daily-forecast-output');
+        const hourlyDetailPanel = document.getElementById('hourly-detail');
+        const hourlyTitle = document.getElementById('hourly-title');
+        const hourlyOutput = document.getElementById('hourly-output');
+
+        let allWeatherData = null; // Store the full API response globally
+
+        // --- ICON/DESCRIPTION MAPPING ---
+        function getWeatherDetails(wmoCode, isDay = true) {
+            let description = "";
+            let iconSvgPath = "";
+            let colorClass = isDay ? "text-yellow-400" : "text-indigo-300";
+
+            // Mapping logic remains the same
+            switch (true) {
+                case [0].includes(wmoCode):
+                    description = "Clear Sky";
+                    iconSvgPath = isDay 
+                        ? "M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8" 
+                        : "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"; 
+                    break;
+                case [1, 2].includes(wmoCode):
+                    description = "Partly Cloudy";
+                    iconSvgPath = "M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"; 
+                    colorClass = "text-gray-400";
+                    break;
+                case [3].includes(wmoCode):
+                    description = "Overcast";
+                    iconSvgPath = "M18 10h-1.26a8 8 0 1 0-16.3 0 10 10 0 0 0 .34 1.34"; 
+                    colorClass = "text-gray-500";
+                    break;
+                case [45, 48].includes(wmoCode):
+                    description = "Fog";
+                    iconSvgPath = "M3 15h18M3 9h18M12 3v2M12 19v2"; 
+                    colorClass = "text-gray-500";
+                    break;
+                case [51, 53, 55, 61, 63, 65, 80, 81, 82].includes(wmoCode):
+                    description = "Rain";
+                    iconSvgPath = "M12 18v3M6.5 17.5l-1.5 1.5M17.5 17.5l1.5 1.5M22 10a7 7 0 0 0-14 0 5 5 0 0 0-5 5h17Z"; 
+                    colorClass = "text-blue-400";
+                    break;
+                case [71, 73, 75, 77, 85, 86].includes(wmoCode):
+                    description = "Snow";
+                    iconSvgPath = "M12 18v3M8 17.5l-1-1M16 17.5l1 1M22 10a7 7 0 0 0-14 0 5 5 0 0 0-5 5h17Z"; 
+                    colorClass = "text-cyan-200";
+                    break;
+                case [95, 96, 99].includes(wmoCode):
+                    description = "Thunderstorm";
+                    iconSvgPath = "M12 2v8h4l-4 8v-8h-4l4-8zM12 22v-2M12 12v-2"; 
+                    colorClass = "text-red-400";
+                    break;
+                default:
+                    description = "Weather Condition";
+                    iconSvgPath = "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"; 
+                    colorClass = "text-gray-500";
+            }
+
+            const svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${colorClass} mx-auto transition-colors duration-300">
+                    <path d="${iconSvgPath}"/>
+                </svg>
+            `;
+
+            return { description, svg };
+        }
+
+
+        // --- MAIN FETCH LOGIC ---
+        async function fetchWeather() {
+            let retries = 0;
+            const maxRetries = 3;
+            
+            dailyOutputDiv.querySelector('#loading').style.display = 'flex'; // Ensure loading is visible
+
+            while (retries < maxRetries) {
+                try {
+                    const response = await fetch(API_URL);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    allWeatherData = await response.json();
+                    renderDailyForecast(allWeatherData);
+                    showHourlyDetail(0); // Automatically show the hourly detail for the first day
+                    return; // Exit loop on success
+
+                } catch (error) {
+                    console.error(`Attempt ${retries + 1} failed:`, error);
+                    retries++;
+                    if (retries < maxRetries) {
+                        const delay = Math.pow(2, retries) * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    } else {
+                        dailyOutputDiv.querySelector('#loading').style.display = 'none';
+                        displayError(`Could not load forecast data. Please try refreshing the page.`);
+                    }
+                }
+            }
+        }
+
+        // --- ERROR HANDLING ---
+        function displayError(message) {
+            dailyOutputDiv.innerHTML = `
+                <div class="col-span-2 md:col-span-5 text-center p-8 bg-red-900 bg-opacity-30 border border-red-700 rounded-xl">
+                    <p class="text-xl font-semibold text-red-400 mb-2">Service Error</p>
+                    <p class="text-sm text-red-300">${message}</p>
+                </div>
+            `;
+        }
+
+        // --- RENDERING DAILY FORECAST ---
+        function renderDailyForecast(data) {
+            dailyOutputDiv.innerHTML = ''; // Clear loading state
+
+            if (!data.daily || !data.daily.time || data.daily.time.length === 0) {
+                displayError("No daily forecast data available in the API response.");
+                return;
+            }
+
+            const forecastDays = Math.min(5, data.daily.time.length);
+
+            for (let i = 0; i < forecastDays; i++) {
+                const dateString = data.daily.time[i];
+                const date = new Date(dateString);
+                
+                // Format the date
+                const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
+                const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                const weatherCode = data.daily.weather_code[i];
+                const tempMax = data.daily.temperature_2m_max[i].toFixed(0);
+                const tempMin = data.daily.temperature_2m_min[i].toFixed(0);
+
+                const { description, svg } = getWeatherDetails(weatherCode, true);
+
+                const cardHTML = `
+                    <div class="daily-card p-4 rounded-xl text-center flex flex-col justify-between items-center" data-day-index="${i}">
+                        <!-- Day/Date -->
+                        <div class="mb-2">
+                            <p class="text-sm font-extrabold uppercase ${i === 0 ? 'text-blue-400' : 'text-gray-300'}">
+                                ${i === 0 ? 'Today' : dayOfWeek}
+                            </p>
+                            <p class="text-xs text-gray-500">${monthDay}</p>
+                        </div>
+                        
+                        <!-- Icon -->
+                        <div class="mb-3">${svg.replace('width="30" height="30"', 'width="40" height="40"')}</div>
+
+                        <!-- Temperatures -->
+                        <div class="text-lg font-bold">
+                            <span class="text-blue-200">${tempMax}°C</span> / 
+                            <span class="text-gray-400 font-normal">${tempMin}°C</span>
+                        </div>
+
+                        <!-- Description -->
+                        <p class="text-xs text-gray-400 mt-2">${description}</p>
+                    </div>
+                `;
+                dailyOutputDiv.innerHTML += cardHTML;
+            }
+
+            // Add event listeners to the new cards
+            document.querySelectorAll('.daily-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-day-index'));
+                    showHourlyDetail(index);
+                });
+            });
+        }
+
+        // --- HOURLY DETAIL LOGIC ---
+        function showHourlyDetail(dayIndex) {
+            if (!allWeatherData) return;
+            
+            // 1. Update active card styling
+            document.querySelectorAll('.daily-card').forEach(card => card.classList.remove('active'));
+            const activeCard = document.querySelector(`.daily-card[data-day-index="${dayIndex}"]`);
+            if (activeCard) activeCard.classList.add('active');
+
+            // 2. Determine the time slice for the selected day
+            const HOURLY_PER_DAY = 24; 
+            const startIndex = dayIndex * HOURLY_PER_DAY;
+            
+            // Get data for the selected day (up to 24 hours)
+            const hourlyTimes = allWeatherData.hourly.time.slice(startIndex, startIndex + HOURLY_PER_DAY);
+            const hourlyTemps = allWeatherData.hourly.temperature_2m.slice(startIndex, startIndex + HOURLY_PER_DAY);
+            const hourlyCodes = allWeatherData.hourly.weather_code.slice(startIndex, startIndex + HOURLY_PER_DAY);
+            const hourlyPrecipitation = allWeatherData.hourly.precipitation.slice(startIndex, startIndex + HOURLY_PER_DAY);
+
+            // 3. Format the day for the title
+            const dayDate = new Date(allWeatherData.daily.time[dayIndex]);
+            const formattedDay = dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            hourlyTitle.textContent = `Hourly Breakdown for ${formattedDay}`;
+
+            // 4. Build the hourly cards (displaying every 3rd hour for brevity)
+            hourlyOutput.innerHTML = '';
+            let hourlyContent = '';
+
+            for (let i = 0; i < hourlyTimes.length; i += 3) {
+                const time = new Date(hourlyTimes[i]);
+                const hour = time.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+                const temp = hourlyTemps[i].toFixed(0);
+                const code = hourlyCodes[i];
+                const precipitation = hourlyPrecipitation[i].toFixed(1);
+
+                // Simple check: is it night?
+                const hourOfDay = time.getHours();
+                const isNight = hourOfDay < 7 || hourOfDay > 19;
+
+                const { description, svg } = getWeatherDetails(code, !isNight); 
+
+                const hourlyCardHTML = `
+                    <div class="hourly-card shadow-lg flex flex-col items-center">
+                        <p class="text-sm font-bold text-blue-400 mb-1">${hour}</p>
+                        <div class="w-7 h-7">${svg}</div>
+                        <p class="text-xl font-extrabold text-blue-200 mt-1">${temp}°C</p>
+                        <p class="text-xs text-gray-500 mt-2 text-center">${description}</p>
+                        <p class="text-xs text-gray-400 mt-1">
+                            <span class="font-semibold text-cyan-300">${precipitation}</span> mm
+                        </p>
+                    </div>
+                `;
+                hourlyContent += hourlyCardHTML;
+            }
+
+            hourlyOutput.innerHTML = hourlyContent;
+            
+            // 5. Show the detail panel
+            hourlyDetailPanel.classList.add('visible');
+        }
+
+        // --- INITIALIZE ---
+        window.onload = fetchWeather;
+
+    </script>
+</body>
+</html>
+
