@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24-Hour Digital Clock</title>
+    <!-- Load Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a clean, modern dark aesthetic */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Deep Charcoal Background */
+            color: #e5e7eb; /* Light text */
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 1rem;
+        }
+
+        /* The container is now transparent and acts only as a centered wrapper */
+        .clock-container {
+            /* All panel-defining styles removed: no background, shadow, or border */
+            border-radius: 1.5rem; 
+            padding: 2.5rem 3rem; 
+            max-width: 90%;
+            width: 550px; 
+            text-align: center;
+        }
+
+        /* Styling for the main time display segments */
+        .digit-segment {
+            /* Fix: Ensure numbers have the same width to prevent jitter */
+            font-variant-numeric: tabular-nums; 
+            
+            /* Smooth transition for the animation */
+            transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+            display: inline-block;
+            font-weight: 900; /* Extra bold for impact */
+            color: #f3f4f6; /* Crisp White */
+            /* Added small padding to segments for better visual breathing room */
+            padding: 0 0.1rem; 
+        }
+        
+        /* Animation class applied briefly when a digit changes */
+        .change-animation {
+            opacity: 0.4; /* Fade out slightly */
+            transform: scale(0.95); /* Shrink slightly */
+        }
+        
+        .colon {
+            font-weight: 900;
+            color: #4b5563; /* Subtle colon color */
+        }
+
+        /* Font Size Settings */
+        #clock-time {
+            font-size: 4.5rem; 
+            line-height: 1; 
+            /* Ensure fixed width for stability across updates */
+            min-width: 320px; 
+        }
+
+        /* Responsive font size adjustments */
+        @media (min-width: 640px) {
+            #clock-time {
+                font-size: 8rem; 
+                min-width: 550px; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="clock-container">
+        <p id="clock-location" class="text-lg text-gray-400 mb-2">
+            Local Time
+        </p>
+
+        <!-- Main Digital Clock Display - Segments are now separated for individual animation -->
+        <div id="clock-time" class="flex justify-center">
+            <span id="hour-segment" class="digit-segment">00</span>
+            <span class="colon">:</span>
+            <span id="minute-segment" class="digit-segment">00</span>
+            <span class="colon">:</span>
+            <span id="second-segment" class="digit-segment">00</span>
+        </div>
+
+        <!-- Date Display -->
+        <p id="clock-date" class="text-md text-gray-500 mt-4">
+            <!-- Date will be inserted here -->
+        </p>
+    </div>
+
+    <script>
+        // Global state to track previous values for comparison
+        let previousTime = { h: null, m: null, s: null };
+
+        // Helper function to pad numbers with a leading zero
+        function pad(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        // Function to apply the animation and update content
+        function animateChange(element, newValue) {
+            // Check if the content is actually changing before applying the animation
+            if (element.textContent === newValue) {
+                return; 
+            }
+
+            // 1. Apply animation start state
+            element.classList.add('change-animation');
+            
+            // 2. Wait a brief moment, then update content and start transition back
+            setTimeout(() => {
+                element.textContent = newValue;
+                // 3. Remove animation class after content is updated
+                setTimeout(() => {
+                    element.classList.remove('change-animation');
+                }, 50); // Transition back time
+            }, 50); // Transition out time
+        }
+
+        // Main clock update function
+        function updateClock() {
+            const now = new Date();
+            const h = now.getHours();
+            const m = now.getMinutes();
+            const s = now.getSeconds();
+
+            const hourElement = document.getElementById('hour-segment');
+            const minuteElement = document.getElementById('minute-segment');
+            const secondElement = document.getElementById('second-segment');
+
+            // --- Time Segment Updates ---
+
+            // Hour Update (only animate if value changes)
+            if (h !== previousTime.h || previousTime.h === null) {
+                animateChange(hourElement, pad(h));
+                previousTime.h = h;
+            }
+            
+            // Minute Update (only animate if value changes)
+            if (m !== previousTime.m || previousTime.m === null) {
+                animateChange(minuteElement, pad(m));
+                previousTime.m = m;
+            }
+
+            // Second Update (animate every second)
+            animateChange(secondElement, pad(s));
+            previousTime.s = s;
+            
+            // --- Date Update ---
+            const dateString = now.toLocaleDateString('en-GB', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            document.getElementById('clock-date').textContent = dateString;
+        }
+
+        // Set the clock to update every second
+        updateClock(); 
+        setInterval(updateClock, 1000);
+
+    </script>
+</body>
+</html>
+
