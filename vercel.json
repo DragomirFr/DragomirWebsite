@@ -6,6 +6,7 @@
     { "source": "/weather", "destination": "/weather.html" },
     { "source": "/gym", "destination": "/gym.html" },
     { "source": "/clock", "destination": "/clock.html" },
+    { "source": "/ai", "destination": "/ai.html" },
     { "source": "/iptv", "destination": "/iptv.html" }
   ]
 }
