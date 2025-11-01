@@ -1,1030 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dragomir's AI - Persistent Chat</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Poppins Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        /* Configuration for the modern, dark UI using Poppins */
-        body {
-            font-family: 'Poppins', sans-serif;
-            transition: all 0.3s ease;
-            background-color: #0d1117; /* Very dark background (Github dark theme) */
-            color: #c9d1d9; /* Light text color */
-        }
-        
-        /* Scrollbar styling for a cleaner look */
-        .scrollable-area::-webkit-scrollbar {
-            width: 8px;
-        }
-        .scrollable-area::-webkit-scrollbar-thumb {
-            background-color: #30363d; /* Dark gray for thumb */
-            border-radius: 4px;
-        }
-        .scrollable-area::-webkit-scrollbar-track {
-            background-color: #161b22; /* Darker track */
-        }
-
-        /* Blinking Cursor for Typing Effect */
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
-        .blinking-cursor {
-            animation: blink 0.75s step-end infinite;
-            display: inline-block;
-            width: 8px;
-            height: 1.2em;
-            background-color: #3b82f6; /* Blue-500 accent */
-            vertical-align: middle;
-            margin-left: 2px;
-        }
-
-        /* Custom styling for the AI response bubble content (where the markdown is rendered) */
-        .ai-content > *:not(p) { margin-top: 1rem; margin-bottom: 1rem; }
-        .ai-content p:last-child { margin-bottom: 0; }
-        
-        /* Headers */
-        .ai-content h1, .ai-content h2, .ai-content h3 {
-            font-weight: 700;
-            color: #60a5fa; /* Light blue for titles */
-            margin-bottom: 0.5rem;
-            border-bottom: 1px solid #30363d;
-            padding-bottom: 0.25rem;
-        }
-        .ai-content h1 { font-size: 1.5rem; }
-        .ai-content h2 { font-size: 1.35rem; }
-        .ai-content h3 { font-size: 1.2rem; }
-
-        /* Code Blocks */
-        .ai-content pre {
-            background-color: #161b22;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.875rem;
-            border: 1px solid #30363d;
-        }
-        .ai-content code {
-             /* Inline code styling */
-            background-color: #3b82f630;
-            padding: 0.1rem 0.3rem;
-            border-radius: 0.25rem;
-            color: #60a5fa;
-            font-family: 'Consolas', 'Monaco', monospace;
-        }
-
-        /* Tables */
-        .ai-content table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .ai-content th, .ai-content td {
-            border: 1px solid #4a5568; /* Gray-600 */
-            padding: 10px 14px;
-            text-align: left;
-        }
-        .ai-content th {
-            background-color: #1f2937; /* Darker header */
-            color: #93c5fd; /* Light blue text */
-            font-weight: 600;
-        }
-        .ai-content tr:nth-child(even) {
-            background-color: #1f293750; /* Subtle stripe */
-        }
-
-        /* Lists */
-        .ai-content ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        .ai-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        .ai-content li { margin-bottom: 0.4rem; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dragomir's AI — Persistent Chat</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+}
+.scrollable-area::-webkit-scrollbar { width: 8px; }
+.scrollable-area::-webkit-scrollbar-thumb {
+  background: #30363d; border-radius: 4px;
+}
+.scrollable-area::-webkit-scrollbar-track { background: #161b22; }
+@keyframes blink { 50% { opacity: 0; } }
+.blinking-cursor {
+  animation: blink 0.75s step-end infinite;
+  display: inline-block; width: 8px; height: 1.2em;
+  background: #3b82f6; margin-left: 2px; vertical-align: middle;
+}
+.ai-content pre {
+  background: #161b22; border: 1px solid #30363d;
+  border-radius: 8px; padding: 0.75rem; overflow-x: auto;
+}
+.ai-content code {
+  background: #3b82f630; border-radius: 4px;
+  padding: 0.15rem 0.3rem; color: #60a5fa;
+  font-family: 'Consolas', monospace;
+}
+.ai-content h1, .ai-content h2, .ai-content h3 {
+  font-weight: 700; color: #60a5fa; margin-bottom: .3rem;
+}
+.ai-content table {
+  border-collapse: collapse; width: 100%;
+}
+.ai-content th, .ai-content td {
+  border: 1px solid #4a5568; padding: 6px 10px;
+}
+</style>
 </head>
+<body class="min-h-screen flex items-center justify-center p-4">
+<div class="w-full max-w-7xl bg-gray-900 rounded-xl shadow-2xl flex h-[95vh] overflow-hidden border border-gray-700/50">
+<!-- Sidebar -->
+<div class="flex flex-col w-64 bg-gray-950 border-r border-gray-700/50 p-4">
+  <h2 class="text-xl font-bold text-blue-400 mb-4 border-b border-gray-700 pb-2">Conversations</h2>
+  <button id="new-chat-button"
+    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md mb-4 flex items-center justify-center transition">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5"
+        x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> New Chat
+  </button>
+  <div id="conversations-list" class="flex-grow overflow-y-auto scrollable-area space-y-2 text-sm text-gray-400">
+    Loading chats...
+  </div>
+  <p id="user-id-display" class="text-xs text-gray-500 mt-4 pt-2 border-t border-gray-700 break-all">User ID: N/A</p>
+</div>
 
-<body class="text-gray-200 min-h-screen flex items-center justify-center p-4">
+<!-- Chat Area -->
+<div class="flex-grow flex flex-col">
+<header class="p-4 bg-gray-950 border-b border-blue-500/50 flex justify-between items-center">
+  <h1 class="text-2xl font-bold text-blue-400 flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-blue-500" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path
+        d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
+    <span id="chat-title">Dragomir's AI</span>
+  </h1>
+  <div id="status-indicator" class="text-sm px-3 py-1 rounded-full bg-gray-600 text-white font-medium">Initializing...</div>
+</header>
 
-    <!-- Main Chat Container (Large, Dark Card) -->
-    <div class="w-full max-w-7xl bg-gray-900 rounded-xl shadow-2xl flex h-[95vh] overflow-hidden border border-gray-700/50">
-        
-        <!-- Conversation Sidebar -->
-        <div class="flex flex-col w-64 bg-gray-950 border-r border-gray-700/50 p-4">
-            <h2 class="text-xl font-bold text-blue-400 mb-4 border-b border-gray-700 pb-2">Conversations</h2>
-            
-            <button 
-                id="new-chat-button"
-                onclick="startNewChat()"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md mb-4 transform active:scale-95 transition duration-150 flex items-center justify-center disabled:opacity-50"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                New Chat
-            </button>
-
-            <div id="conversations-list" class="flex-grow overflow-y-auto scrollable-area space-y-2">
-                <!-- Conversation list items will be injected here -->
-                <p id="loading-chats" class="text-sm text-gray-500">Loading chats...</p>
-            </div>
-            
-            <p id="user-id-display" class="text-xs text-gray-500 mt-4 pt-2 border-t border-gray-700 break-all">User ID: N/A</p>
-
-        </div>
-
-        <!-- Main Chat Area -->
-        <div class="flex-grow flex flex-col">
-            <!-- Header (Title Bar) -->
-            <header class="p-5 bg-gray-950 border-b border-blue-500/50 flex justify-between items-center shadow-lg">
-                <h1 class="text-2xl font-bold text-blue-400 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block mr-3 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                    <span id="chat-title">Dragomir's AI</span>
-                </h1>
-                
-                <div class="flex items-center space-x-4">
-                    <div id="status-indicator" class="text-sm px-3 py-1 rounded-full bg-gray-600 text-white font-medium">Initializing...</div>
-                </div>
-            </header>
-
-            <!-- Chat Messages Area -->
-            <div id="chat-container" class="chat-container flex-grow overflow-y-auto p-6 space-y-6 bg-gray-800 scrollable-area">
-                <!-- Initial System Message -->
-                <div class="flex justify-start">
-                    <div class="ai-content bg-gray-700/50 text-gray-200 p-4 rounded-xl rounded-tl-none max-w-4xl shadow-md transition duration-300 border-l-4 border-blue-600">
-                        <p class="font-semibold text-blue-400">System Status</p>
-                        <p class="text-base" id="initial-system-message">Connecting to database and authenticating...</p>
-                    </div>
-                </div>
-                <!-- Messages and generated files will be injected here -->
-            </div>
-
-            <!-- Input Area - Updated for Multimodal Input -->
-            <div class="p-4 bg-gray-900 border-t border-gray-700 flex flex-col space-y-2">
-                
-                <!-- Uploaded Files Preview Area (New) -->
-                <div id="uploaded-files-preview" class="hidden p-3 bg-gray-800 rounded-lg border border-gray-700">
-                    <!-- Image thumbnail and clear button will be added here -->
-                </div>
-
-                <div class="flex space-x-3 items-end">
-                    
-                    <!-- File Input Button (New) -->
-                    <label for="file-input" class="cursor-pointer text-gray-400 p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition duration-150 transform active:scale-95" title="Attach Image (Max 1MB)">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                    </label>
-                    <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
-                    
-                    <input 
-                        type="text" 
-                        id="prompt-input" 
-                        placeholder="Send a command or query..." 
-                        class="flex-grow p-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-base"
-                        onkeypress="if(event.key === 'Enter') sendMessage()"
-                        disabled
-                    />
-                    <button 
-                        id="send-button" 
-                        onclick="sendMessage()"
-                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-blue-500/30 transform active:scale-95 transition duration-150 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                        Send
-                    </button>
-                </div>
-            </div>
-        </div>
+<div id="chat-container" class="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-800 scrollable-area">
+  <div class="flex justify-start">
+    <div class="ai-content bg-gray-700/50 p-4 rounded-xl border-l-4 border-blue-600 max-w-4xl">
+      <p class="font-semibold text-blue-400">System Status</p>
+      <p id="initial-system-message">Connecting to database and authenticating...</p>
     </div>
+  </div>
+</div>
 
-    <!-- Script Module -->
-    <script type="module">
-        
-        // --- Global Variables ---
-        let userId = null; // Stored in localStorage
-        let currentChatId = null;
-        let chatHistory = []; // Local history (array of {role, parts: [{text, files: []}]})
-        let conversations = []; // List of all metadata chats
-        let isTyping = false;
-        let selectedFile = null; // { base64Data: string, mimeType: string } 
+<!-- Typing Indicator -->
+<div id="typing-indicator" class="hidden p-3 text-gray-400 italic bg-gray-900 border-t border-gray-700 text-sm">
+  Dragomir's AI is typing<span class="dot-1">.</span><span class="dot-2">.</span><span class="dot-3">.</span>
+</div>
 
-        // Global variables provided by the Canvas environment (Only non-Firebase config needed)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        
-        // API Key (Replace with your key if running locally outside the Canvas environment)
-        let apiKey = "AIzaSyDSLwtV0rZTU0RkNUjwFvTND-t6w4ryEPs"; 
+<!-- Input -->
+<div class="p-4 bg-gray-900 border-t border-gray-700 flex flex-col space-y-2">
+  <div class="flex space-x-3 items-end">
+    <input type="text" id="prompt-input" placeholder="Send a command or query..."
+      class="flex-grow p-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      disabled onkeypress="if(event.key==='Enter')sendMessage()">
+    <button id="send-button" onclick="sendMessage()"
+      class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg disabled:opacity-50"
+      disabled>Send</button>
+  </div>
+</div>
+</div>
+</div>
 
-        // --- DOM Elements (Accessible globally within the module) ---
-        const chatContainer = document.getElementById('chat-container');
-        const promptInput = document.getElementById('prompt-input');
-        const sendButton = document.getElementById('send-button');
-        const statusIndicator = document.getElementById('status-indicator');
-        const initialSystemMessage = document.getElementById('initial-system-message');
-        const userIdDisplay = document.getElementById('user-id-display');
-        const conversationsList = document.getElementById('conversations-list');
-        const newChatButton = document.getElementById('new-chat-button');
-        const fileInput = document.getElementById('file-input');
-        const uploadedFilesPreview = document.getElementById('uploaded-files-preview');
-        
-        // --- Utility Functions ---
+<script>
+let userId=null,currentChatId=null,chatHistory=[],conversations=[],isTyping=false;
+const apiKey="YOUR_GEMINI_API_KEY";
+const chatContainer=document.getElementById('chat-container');
+const promptInput=document.getElementById('prompt-input');
+const sendButton=document.getElementById('send-button');
+const statusIndicator=document.getElementById('status-indicator');
+const userIdDisplay=document.getElementById('user-id-display');
+const conversationsList=document.getElementById('conversations-list');
+const typingIndicator=document.getElementById('typing-indicator');
 
-        function updateStatus(text, bgColor) {
-            statusIndicator.textContent = text;
-            statusIndicator.className = 'text-sm px-3 py-1 rounded-full text-white font-medium ' + bgColor;
-        }
+function updateStatus(txt,bg){statusIndicator.textContent=txt;statusIndicator.className=`text-sm px-3 py-1 rounded-full text-white ${bg}`;}
+function renderMarkdown(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\n/g,'<br>');}
 
-        function showTemporaryMessage(message, bgColor) {
-            const tempDiv = document.createElement('div');
-            tempDiv.className = `fixed bottom-4 right-4 z-50 p-4 rounded-lg shadow-xl text-white font-medium ${bgColor}`;
-            tempDiv.textContent = message;
-            document.body.appendChild(tempDiv);
-            setTimeout(() => {
-                tempDiv.remove();
-            }, 3000);
-        }
-
-        /**
-         * Parses and renders an extensive range of markdown elements into professional HTML.
-         */
-        function renderMarkdown(text) {
-            let html = text;
-
-            // 1. Handle Code Blocks (Only for inline blocks that did not become files)
-            html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, content) => {
-                const cleanedContent = content.trim(); 
-                const escapedContent = cleanedContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                const langTag = lang ? `<span class="text-blue-400 font-bold block mb-1"># ${lang.toUpperCase()}</span>` : '';
-                return `<pre>${langTag}<code class="language-${lang || 'plaintext'} whitespace-pre-wrap">${escapedContent}</code></pre>`;
-            });
-
-            // 2. Handle Tables
-            const lines = html.split('\n');
-            let inTable = false;
-            let tableHtml = [];
-            const processedLines = [];
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
-                
-                if (line.startsWith('|') && line.endsWith('|')) {
-                    if (!inTable) {
-                        inTable = true;
-                        tableHtml.push('<table>');
-                    }
-                    
-                    const cells = line.split('|').map(c => c.trim()).filter(c => c.length > 0);
-                    
-                    const isSeparator = i + 1 < lines.length && lines[i+1].trim().match(/^\|[-: ]+\|/);
-                    
-                    if (isSeparator) {
-                        tableHtml.push('<thead><tr>');
-                        cells.forEach(cell => tableHtml.push(`<th>${cell}</th>`));
-                        tableHtml.push('</tr></thead><tbody>');
-                        i++;
-                    } else {
-                        tableHtml.push('<tr>');
-                        cells.forEach(cell => tableHtml.push(`<td>${cell}</td>`));
-                        tableHtml.push('</tr>');
-                    }
-                    
-                    if (i === lines.length - 1 || !lines[i + 1].trim().startsWith('|')) {
-                        if (inTable) {
-                            tableHtml.push('</tbody></table>');
-                            processedLines.push(tableHtml.join(''));
-                            tableHtml = [];
-                            inTable = false;
-                        }
-                    }
-                } else {
-                    if (inTable) {
-                        tableHtml.push('</tbody></table>');
-                        processedLines.push(tableHtml.join(''));
-                        tableHtml = [];
-                        inTable = false;
-                    }
-                    processedLines.push(line);
-                }
-            }
-            html = processedLines.join('\n');
-            
-            // 3. Handle Lists, Headers, and Paragraphs
-            const blocks = html.split('\n\n').filter(b => b.trim() !== '');
-            let finalHtml = [];
-
-            blocks.forEach(block => {
-                let currentBlock = block.trim();
-                
-                // Headers
-                if (currentBlock.startsWith('### ')) { finalHtml.push(`<h3>${currentBlock.substring(4)}</h3>`); return; }
-                if (currentBlock.startsWith('## ')) { finalHtml.push(`<h2>${currentBlock.substring(3)}</h2>`); return; }
-                if (currentBlock.startsWith('# ')) { finalHtml.push(`<h1>${currentBlock.substring(2)}</h1>`); return; }
-
-                // Lists
-                const listItems = currentBlock.split('\n').filter(l => l.trim().match(/^(\*|-|\+|\d+\.)\s/));
-                if (listItems.length > 0) {
-                    const isOrdered = listItems[0].trim().match(/^\d+\./);
-                    const tag = isOrdered ? 'ol' : 'ul';
-                    let listContent = `<${tag}>`;
-                    listItems.forEach(item => {
-                        const content = item.trim().replace(/^(\*|-|\+|\d+\.)\s/, '');
-                        listContent += `<li>${content}</li>`;
-                    });
-                    listContent += `</${tag}>`;
-                    finalHtml.push(listContent);
-                    return;
-                }
-
-                // Paragraphs and already processed tables/code
-                if (currentBlock.includes('<table') || currentBlock.includes('<pre')) {
-                    finalHtml.push(currentBlock);
-                } else {
-                    currentBlock = currentBlock.replace(/\n/g, '<br>');
-                    finalHtml.push(`<p>${currentBlock}</p>`);
-                }
-            });
-
-            html = finalHtml.join('');
-
-            // 4. Handle Inline Markdown
-            html = html.replace(/\*\*([^\*]+?)\*\*/g, '<strong>$1</strong>');
-            html = html.replace(/`([^`]+?)`/g, '<code>$1</code>');
-
-            return html;
-        }
-
-        /**
-         * Appends a new message bubble to the chat container.
-         * @param {string} role - 'user' or 'model'
-         * @param {string} text - The message content
-         * @param {Array<Object>} files - Array of file objects to display (optional - includes attached image for user role)
-         * @param {boolean} isTypingEffect - Whether to apply the typing effect.
-         * @returns {{textElement: HTMLElement, bubbleContent: HTMLElement}} The created text element and the bubble content container.
-         */
-        function appendMessage(role, text, files = [], isTypingEffect = false) {
-            const isUser = role === 'user';
-            const alignment = isUser ? 'justify-end' : 'justify-start';
-            const bubbleClasses = isUser 
-                ? 'bg-blue-600 text-white p-4 rounded-xl rounded-br-none max-w-lg shadow-md' 
-                : 'ai-content bg-gray-700/50 text-gray-200 p-4 rounded-xl rounded-tl-none max-w-4xl shadow-md transition duration-300 border-l-4 border-blue-600';
-
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `flex ${alignment}`;
-            
-            // Determine content for the bubble body
-            let contentHtml = `<div class="${bubbleClasses} transition duration-300 transform hover:scale-[1.005]">
-                                    <p class="text-base whitespace-pre-wrap">${isTypingEffect ? '...' : renderMarkdown(text)}</p>
-                                </div>`;
-            
-            // If it's a user message with an attached file (image), display the image above the text
-            if (isUser && files.length > 0 && files[0].language === 'image') {
-                const imageFile = files[0];
-                const renderedText = isTypingEffect ? '...' : renderMarkdown(text);
-                contentHtml = `
-                    <div class="${bubbleClasses} transition duration-300 transform hover:scale-[1.005]">
-                        <div class="mb-3 p-2 border border-gray-500 rounded-lg bg-white/10">
-                            <img src="${imageFile.content}" alt="User Uploaded Image" class="w-full max-h-48 object-contain rounded-md shadow-md"/>
-                        </div>
-                        <p class="text-base whitespace-pre-wrap">${renderedText}</p>
-                    </div>
-                `;
-            } else if (!isUser) {
-                // For AI model messages, we need to extract the inner bubble div for later content replacement
-                 contentHtml = `<div class="${bubbleClasses} transition duration-300 transform hover:scale-[1.005]">
-                                    <p class="text-base whitespace-pre-wrap">${isTypingEffect ? '...' : renderMarkdown(text)}</p>
-                                </div>`;
-            }
-
-
-            messageDiv.innerHTML = contentHtml;
-            chatContainer.appendChild(messageDiv);
-            
-            // --- Append Generated Files Block (if any) ---
-            // ONLY append generated files (not the inline image attached to the user message)
-            if (files && files.length > 0 && !(isUser && files[0].language === 'image')) {
-                displayGeneratedFiles(files);
-            }
-
-            chatContainer.scrollTop = chatContainer.scrollHeight; 
-            
-            // FIX: Return the text element and the bubble content container element directly
-            const bubbleContent = messageDiv.querySelector('div');
-            return { 
-                textElement: bubbleContent.querySelector('p'), 
-                bubbleContent: bubbleContent
-            };
-        }
-
-        /**
-         * Displays the generated files (code blocks) below the conversational message.
-         */
-        function displayGeneratedFiles(files) {
-            files.forEach(file => {
-                const fileContainer = document.createElement('div');
-                fileContainer.className = 'w-full flex justify-start mt-2';
-                fileContainer.innerHTML = `
-                    <div class="w-full max-w-7xl bg-gray-950 border border-yellow-500/50 rounded-xl shadow-xl overflow-hidden">
-                        <details open>
-                            <summary class="flex items-center justify-between cursor-pointer p-4 bg-gray-900 hover:bg-gray-800 transition duration-150">
-                                <span class="text-lg font-mono font-semibold text-yellow-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-2 text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-                                    ${file.filepath} <span class="text-sm text-gray-500 ml-3">(${file.language.toUpperCase()})</span>
-                                </span>
-                                <button class="copy-button bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded-lg transform active:scale-95" data-content='${encodeURIComponent(file.content)}'>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                    Copy Code
-                                </button>
-                            </summary>
-                            <pre class="overflow-x-auto p-4 bg-gray-800 text-gray-300 text-sm whitespace-pre-wrap"><code class="language-${file.language}">${file.content}</code></pre>
-                        </details>
-                    </div>
-                `;
-                chatContainer.appendChild(fileContainer);
-            });
-            chatContainer.scrollTop = chatContainer.scrollHeight; 
-
-            // Add event listeners for copy buttons
-            document.querySelectorAll('.copy-button').forEach(button => {
-                button.onclick = (e) => {
-                    e.stopPropagation(); // Prevent detail toggle
-                    const content = decodeURIComponent(e.target.dataset.content);
-                    copyToClipboard(content, e.target);
-                };
-            });
-        }
-
-        function copyToClipboard(text, button) {
-            try {
-                // Use the older execCommand for better iFrame compatibility
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                
-                const originalText = button.innerHTML;
-                button.innerHTML = 'Copied!';
-                setTimeout(() => {
-                    button.innerHTML = originalText;
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy text:', err);
-                button.innerHTML = 'Failed!';
-            }
-        }
-
-        /**
-         * Extracts file blocks from the raw markdown and separates the conversational text.
-         */
-        function extractFilesAndText(rawMarkdown) {
-            const files = [];
-            let conversationalText = rawMarkdown;
-
-            // FIX: Ensure FILE_BLOCK_REGEX is defined inside the function to prevent ReferenceError
-const FILE_BLOCK_REGEX = /```(\w+):([^:\n]+):([^\n]+)\n([\s\S]*?)```eof/g;
-let match;
-while ((match = FILE_BLOCK_REGEX.exec(rawMarkdown)) !== null) {
-    files.push({
-        language: match[1],
-        title: match[2].trim(),
-        filepath: match[3].trim(),
-        content: match[4].trim() 
-    });
-    
-    // Replace the matched block with an empty string in the conversational text
-    conversationalText = conversationalText.replace(match[0], '');
+function appendMessage(role,text,isTypingEffect=false){
+  const isUser=role==='user';
+  const div=document.createElement('div');
+  div.className=`flex ${isUser?'justify-end':'justify-start'}`;
+  const bubble=document.createElement('div');
+  bubble.className=isUser?'bg-blue-600 text-white p-4 rounded-xl rounded-br-none max-w-lg shadow-md':'ai-content bg-gray-700/50 text-gray-200 p-4 rounded-xl rounded-tl-none max-w-4xl shadow-md border-l-4 border-blue-600';
+  const p=document.createElement('p');p.innerHTML=isTypingEffect?'...':renderMarkdown(text);
+  bubble.appendChild(p);div.appendChild(bubble);chatContainer.appendChild(div);
+  chatContainer.scrollTop=chatContainer.scrollHeight;
+  return {textElement:p,bubbleContent:bubble};
 }
 
-// Clean up excess whitespace/newlines left after removal
-conversationalText = conversationalText.trim();
-
-// If the entire response was only files, provide a conversational fallback
-if (conversationalText === '' && files.length > 0) {
-    conversationalText = `I have successfully generated **${files.length} file(s)** for you below. Please review the code.`;
+// Smooth markdown typing animation
+async function typeMessage(element,text,delay=10){
+  return new Promise(resolve=>{
+    const html=renderMarkdown(text);
+    const temp=document.createElement('div');temp.innerHTML=html;
+    const chars=temp.innerHTML.split('');element.innerHTML='';
+    const cursor=document.createElement('span');cursor.className='blinking-cursor';element.appendChild(cursor);
+    let i=0;function typeNext(){
+      if(i<chars.length){cursor.insertAdjacentText('beforebegin',chars[i++]);chatContainer.scrollTop=chatContainer.scrollHeight;setTimeout(typeNext,delay);}
+      else{cursor.remove();resolve();}
+    }typeNext();
+  });
 }
 
-return { conversationalText, files };
-
-        // Clean up excess whitespace/newlines left after removal
-        conversationalText = conversationalText.trim();
-        
-        // If the entire response was only files, provide a conversational fallback
-        if (conversationalText === '' && files.length > 0) {
-            conversationalText = `I have successfully generated **${files.length} file(s)** for you below. Please review the code.`;
-        }
-
-        return { conversationalText, files };
-    }
-
-    // Convert ArrayBuffer to Base64 String
-    function arrayBufferToBase64(buffer) {
-        let binary = '';
-        const bytes = new Uint8Array(buffer);
-        const len = bytes.byteLength;
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
-    }
-
-    window.handleFileSelect = function(event) {
-        const file = event.target.files[0];
-        if (!file) {
-            clearSelectedFile();
-            return;
-        }
-
-        if (!file.type.startsWith('image/')) {
-            showTemporaryMessage('Only image files are supported.', 'bg-red-500');
-            fileInput.value = ''; // Clear file input
-            clearSelectedFile();
-            return;
-        }
-
-        // Limit file size to 1MB (1024 * 1024 bytes) for efficient API calls
-        if (file.size > 1024 * 1024) {
-             showTemporaryMessage('Image size must be less than 1MB.', 'bg-red-500');
-            fileInput.value = ''; 
-            clearSelectedFile();
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            // e.target.result is an ArrayBuffer
-            const base64Data = arrayBufferToBase64(e.target.result);
-            selectedFile = {
-                base64Data: base64Data,
-                mimeType: file.type
-            };
-            
-            // Update preview UI
-            updateFilePreview(file.name);
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    window.clearSelectedFile = function() {
-        selectedFile = null;
-        fileInput.value = '';
-        uploadedFilesPreview.classList.add('hidden');
-        uploadedFilesPreview.innerHTML = '';
-        updateStatus('Ready (Idle)', 'bg-green-600');
-    }
-
-    function updateFilePreview(fileName) {
-        if (!selectedFile) return;
-
-        uploadedFilesPreview.innerHTML = `
-            <div class="flex items-center space-x-3">
-                <img src="data:${selectedFile.mimeType};base64,${selectedFile.base64Data}" alt="Uploaded Image" class="h-10 w-10 object-cover rounded-md shadow-md"/>
-                <span class="flex-grow text-sm text-gray-400 truncate">${fileName}</span>
-                <button onclick="clearSelectedFile()" class="text-red-400 hover:text-red-500 transition duration-150 p-1 rounded-full bg-gray-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-        `;
-        uploadedFilesPreview.classList.remove('hidden');
-        updateStatus('Image Attached', 'bg-yellow-600');
-    }
-
-
-    /**
-     * Simulates a typewriter effect.
-     */
-    function typeMessage(element, text, delay = 5) {
-        return new Promise(resolve => {
-            let i = 0;
-            element.innerHTML = ''; 
-            
-            const cursor = document.createElement('span');
-            cursor.className = 'blinking-cursor';
-            element.appendChild(cursor);
-
-            const interval = setInterval(() => {
-                if (i < text.length) {
-                    const nextChar = text.charAt(i);
-                    cursor.before(document.createTextNode(nextChar));
-                    i++;
-                    if (i % 5 === 0) { chatContainer.scrollTop = chatContainer.scrollHeight; }
-                } else {
-                    clearInterval(interval);
-                    cursor.remove(); 
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                    resolve();
-                }
-            }, delay);
-        });
-    }
-
-    // --- Local Storage Persistence Functions ---
-
-    /**
-     * Loads all conversation metadata from localStorage, sorts them by updated_at, and renders the list.
-     */
-    function loadAllConversations() {
-        const rawData = localStorage.getItem('conversations');
-        conversations = rawData ? JSON.parse(rawData) : [];
-        // Sort by updated_at descending (most recent first)
-        conversations.sort((a, b) => (b.updated_at || 0) - (a.updated_at || 0));
-        renderConversationsList();
-    }
-
-    /**
-     * Saves all conversation metadata to localStorage.
-     */
-    function saveAllConversations() {
-        // Re-sort before saving to keep the list ordered by updated_at
-        conversations.sort((a, b) => (b.updated_at || 0) - (a.updated_at || 0));
-        localStorage.setItem('conversations', JSON.stringify(conversations));
-        renderConversationsList();
-    }
-
-    /**
-     * Loads message history for a specific chat ID from localStorage.
-     */
-    function loadChatHistory(chatId) {
-        const rawData = localStorage.getItem(`chat_${chatId}_messages`);
-        return rawData ? JSON.parse(rawData) : [];
-    }
-
-    /**
-     * Saves message history for a specific chat ID to localStorage.
-     */
-    function saveChatHistory(chatId, history) {
-        localStorage.setItem(`chat_${chatId}_messages`, JSON.stringify(history));
-    }
-    
-    // This is MANDATORY to update local chat history and save to Local Storage
-    async function saveMessage(role, text, files = []) {
-        if (!currentChatId) {
-            console.warn("Attempted to save message but no chat is selected.");
-            return;
-        }
-
-        // The 'parts' array now includes the text and the optional files array
-        const message = { role, parts: [{ text, files }] };
-        
-        // 1. Update local history and save messages
-        chatHistory.push(message);
-        saveChatHistory(currentChatId, chatHistory);
-
-        // 2. Update conversation metadata and save all conversations
-        const chatIndex = conversations.findIndex(c => c.id === currentChatId);
-        if (chatIndex !== -1) {
-            const now = Date.now();
-            conversations[chatIndex].updated_at = now;
-
-            // Update chat title if it's the first exchange (message count is 2: user + model)
-            if (chatHistory.length === 2) {
-                const userMessageText = chatHistory[0].parts[0].text;
-                let newTitle = userMessageText.substring(0, 30).trim();
-                if (userMessageText.length > 30) newTitle += '...';
-                conversations[chatIndex].title = newTitle;
-            }
-        }
-        saveAllConversations();
-    }
-
-    function renderConversationsList() {
-        conversationsList.innerHTML = '';
-        if (conversations.length === 0) {
-            conversationsList.innerHTML = '<p class="text-sm text-gray-500">No chats found. Click "New Chat" to start.</p>';
-            return;
-        }
-
-        conversations.forEach(chat => {
-            const isActive = chat.id === currentChatId;
-            const button = document.createElement('button');
-            button.className = `w-full text-left p-3 rounded-lg transition duration-150 hover:bg-gray-800 ${isActive ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-800 text-gray-300'}`;
-            button.innerHTML = `<span class="font-medium truncate block">${chat.title || "Dragomir's AI"}</span>`;
-            button.onclick = () => loadChat(chat.id);
-            conversationsList.appendChild(button);
-        });
-    }
-
-    // Loads the messages for a specific chat ID
-    function loadChat(chatId) {
-        if (chatId === currentChatId) return; // Already loaded
-
-        // Reset typing state to allow loading
-        isTyping = false;
-        currentChatId = chatId;
-        
-        // Find metadata
-        const chatData = conversations.find(c => c.id === chatId);
-        
-        // Highlight the active chat in the sidebar (re-render list)
-        renderConversationsList();
-
-        updateStatus('Loading Chat...', 'bg-yellow-600');
-        promptInput.disabled = true;
-        sendButton.disabled = true;
-
-        // Load history from localStorage
-        chatHistory = loadChatHistory(chatId);
-
-        // Render messages
-        renderChatMessages(chatHistory);
-        
-        updateStatus('Chat Loaded', 'bg-green-600');
-        promptInput.disabled = false;
-        sendButton.disabled = false;
-        promptInput.focus();
-    }
-
-    // Renders all messages from the current chatHistory array
-    function renderChatMessages(messages) {
-        chatContainer.innerHTML = '';
-        appendInitialMessage(); // Always start with system message
-
-        // Skip the first message (which is the initial system message)
-        messages.forEach(msg => {
-            const text = msg.parts[0].text;
-            const files = msg.parts[0].files || [];
-            appendMessage(msg.role, text, files, false);
-        });
-    }
-
-    async function startNewChat(focus = true) {
-        if (!userId) {
-            console.error("Cannot start new chat: User ID unavailable.");
-            return;
-        }
-
-        try {
-            newChatButton.disabled = true;
-            updateStatus('Starting New Chat...', 'bg-blue-600');
-
-            // Generate a unique ID and timestamp
-            const newId = 'chat-' + Date.now() + Math.random().toString(36).substring(2, 6);
-            const now = Date.now();
-
-            const newChatMetadata = {
-                id: newId,
-                title: 'New Conversation',
-                created_at: now,
-                updated_at: now,
-            };
-            
-            // Add new chat to the start of the list and save metadata
-            conversations.unshift(newChatMetadata); 
-            saveAllConversations();
-
-            // Load the new chat (which will update the UI)
-            loadChat(newId); 
-
-            if (focus) {
-                promptInput.focus();
-            }
-        } catch (error) {
-            console.error("Error creating new chat:", error);
-            updateStatus('New Chat Failed', 'bg-red-600');
-        } finally {
-            newChatButton.disabled = false;
-        }
-    }
-
-    // --- Core Logic ---
-
-    async function initPersistence() {
-        try {
-            // 1. Get or Create User ID (using a persistent ID in Local Storage)
-            userId = localStorage.getItem('localUserId');
-            if (!userId) {
-                // Generate a random, persistent ID if it doesn't exist
-                userId = 'local-' + Math.random().toString(36).substring(2, 15);
-                localStorage.setItem('localUserId', userId);
-            }
-            userIdDisplay.textContent = `User ID: ${userId}`;
-            initialSystemMessage.textContent = "Initialized persistence using browser's Local Storage. Loading conversations...";
-
-            // 2. Load conversations
-            loadAllConversations();
-            
-            // 3. Handle initial chat state
-            if (conversations.length > 0) {
-                // Load the most recent chat
-                loadChat(conversations[0].id);
-            } else {
-                // Start a new chat if the list is empty
-                startNewChat(false); 
-            }
-            
-        } catch (error) {
-            console.error("Local Storage Initialization Error:", error);
-            initialSystemMessage.textContent = `CRITICAL ERROR: Failed to initialize local storage. Details: ${error.message}`;
-            updateStatus('Init Failed', 'bg-red-600');
-        }
-    }
-    
-    function appendInitialMessage() {
-         const systemMessage = "Welcome, I am **Dragomir's AI**. I aspire to be as helpful as I can to you.";
-         // This function is only for the welcome message, not part of chatHistory
-         const messageDiv = document.createElement('div');
-         messageDiv.className = `flex justify-start`;
-        
-         messageDiv.innerHTML = `
-            <div class="ai-content bg-gray-700/50 text-gray-200 p-4 rounded-xl rounded-tl-none max-w-4xl shadow-md transition duration-300 border-l-4 border-blue-600">
-                <p class="font-semibold text-blue-400">System Status</p>
-                <p class="text-base">${renderMarkdown(systemMessage)}</p>
-            </div>
-        `;
-        chatContainer.appendChild(messageDiv);
-    }
-    
-    window.onload = function() {
-        initPersistence();
-    }
-
-
-    async function sendMessage() {
-        if (!currentChatId || isTyping) return;
-        const prompt = promptInput.value.trim();
-        const fileToSubmit = selectedFile; // Capture file data before clear
-
-        if (!prompt && !fileToSubmit) return; // Must have text or file
-
-        // 1. Prepare data for storage and display
-        const fileHistoryInfo = fileToSubmit ? [{ // Create file object to store in history
-            language: 'image',
-            title: 'Uploaded Image',
-            filepath: fileInput.files[0].name,
-            content: `data:${fileToSubmit.mimeType};base64,${fileToSubmit.base64Data}` // Full data URL for display
-        }] : [];
-
-        // 2. Display and Save User Message 
-        // FIX: appendMessage now returns an object, but we don't need it for the user message
-        appendMessage('user', prompt, fileHistoryInfo);
-        await saveMessage('user', prompt, fileHistoryInfo); // Save instantly to local storage
-        
-        // CRITICAL: Clear the file AFTER saving to history but BEFORE API call
-        clearSelectedFile(); 
-
-        // 3. Prepare UI for AI Response (Loading State)
-        isTyping = true;
-        promptInput.value = '';
-        sendButton.disabled = true;
-        promptInput.disabled = true;
-        updateStatus('Processing Request...', 'bg-blue-600');
-        
-        // Create a message placeholder for the conversational response
-        // FIX: Correctly de-structure the returned object to avoid TypeError
-        const { textElement: aiMessageElement, bubbleContent: aiBubbleContent } = appendMessage('model', '...', true);
-        let responseRawMarkdown = '';
-
-        try {
-            // 4. Call the API using the current, up-to-date chatHistory
-            responseRawMarkdown = await callGeminiApi(prompt, fileToSubmit);
-            
-            // 5. Extract Files and Text
-            const { conversationalText, files } = extractFilesAndText(responseRawMarkdown);
-            
-            // 6. Extract and Type the CLEAN conversational text
-            await typeMessage(aiMessageElement, conversationalText);
-            
-            // 7. RENDER the final conversational content using rendered markdown
-            aiBubbleContent.innerHTML = renderMarkdown(conversationalText);
-
-            // 8. Display and Save AI Response (Text + Files)
-            if (files.length > 0) {
-                displayGeneratedFiles(files);
-            }
-            
-            await saveMessage('model', conversationalText, files);
-
-
-        } catch (error) {
-            console.error("Gemini API Error:", error);
-            let errorMessage = `An API error occurred. Details: ${error.message}. Please check your browser console.`;
-            if (error.message.includes("403") || error.message.includes("unregistered callers")) {
-                errorMessage = "🔴 **API Key Error (403)**:\n\nIf running locally, you **MUST** insert your Gemini API Key into the \`let apiKey = \"\"\` line in the script section.";
-            }
-
-            // If an error occurs, update the last message placeholder with the error.
-            // Note: The error message uses renderMarkdown to format the bold text and newlines
-            aiBubbleContent.innerHTML = renderMarkdown(errorMessage); 
-            aiBubbleContent.classList.remove('bg-gray-700/50', 'border-blue-600');
-            aiBubbleContent.classList.add('bg-red-800/80', 'border-red-600', 'text-white');
-
-        } finally {
-            // 9. Reset UI
-            isTyping = false;
-            sendButton.disabled = false;
-            promptInput.disabled = false;
-            promptInput.focus();
-            updateStatus('Ready (Idle)', 'bg-green-600');
-        }
-    }
-
-    /**
-     * Calls the Gemini API, including the current chat history for context.
-     * @param {string} userQuery - The user's text prompt.
-     * @param {object|null} currentFileData - The captured file data for the current turn.
-     */
-    async function callGeminiApi(userQuery, currentFileData = null) {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-        const maxRetries = 3;
-        const modelName = 'gemini-2.5-flash-preview-09-2025';
-        
-        // Correctly build API contents from chatHistory, ensuring the multimodal parts are included
-        const apiContents = chatHistory.map(msg => {
-            let parts = [];
-            const textPart = msg.parts[0].text;
-            const filePart = msg.parts[0].files?.[0]; // Check for file info saved in history
-
-            if (msg.role === 'user' && filePart && filePart.language === 'image') {
-                // This is a user message with an image. Extract base64 data from the stored data URL.
-                const base64Data = filePart.content.split(',')[1];
-                const mimeType = filePart.content.split(':')[1].split(';')[0];
-                
-                parts.push({ text: textPart });
-                parts.push({
-                    inlineData: {
-                        mimeType: mimeType,
-                        data: base64Data
-                    }
-                });
-            } else {
-                // Normal text message
-                parts.push({ text: textPart });
-            }
-
-            return { role: msg.role, parts: parts };
-        });
-
-        const payload = {
-            contents: apiContents, // Use the fully constructed history
-            tools: [{ "google_search": {} }], 
-            systemInstruction: {
-                parts: [{ text: "You are Dragomir’s **Chief Analytical Processor (CAP)** — an advanced, high-level system designed to support him in software engineering, automation, and structured content generation. You specialize in **Python, Java, web systems, and analytical writing**, maintaining a **professional, precise, and decisive** tone at all times. **Always** produce outputs using the required file block syntax (` ```{language}:{Title}:{filepath}\n{content}\n```eof `) for all code, applications, scripts, and documents. Present your output *before or after* a short, context-aware explanation. Use **advanced markdown formatting** (headers, tables, lists, and code blocks) to ensure clarity, readability, and professional structure. Keep responses concise, leverage Dragomir’s prior context, and operate as a focused analytical and generative unit." }]
-            },
-        };
-
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
-            try {
-                const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-                if (attempt > 0) { await new Promise(resolve => setTimeout(resolve, delay)); }
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorBody = await response.json();
-                    if (response.status === 429 && attempt < maxRetries - 1) { continue; 
-                    } else {
-                        throw new Error(`API returned status ${response.status}: ${errorBody.error?.message || 'Unknown error'}`);
-                    }
-                }
-
-                const result = await response.json();
-                const candidate = result.candidates?.[0];
-
-                if (candidate && candidate.content?.parts?.[0]?.text) {
-                    let text = candidate.content.parts[0].text;
-                    
-                    // Handle Grounding Sources (Citations)
-                    const groundingMetadata = candidate.groundingMetadata;
-                    if (groundingMetadata && groundingMetadata.groundingAttributions) {
-                        const sources = groundingMetadata.groundingAttributions
-                            .map(attribution => ({
-                                uri: attribution.web?.uri,
-                                title: attribution.web?.title,
-                            }))
-                            .filter(source => source.uri && source.title)
-                            .slice(0, 3);
-
-                        if (sources.length > 0) {
-                            text += "\n\n---\n\n**[METADATA] Sources:**\n";
-                            sources.forEach((s, index) => {
-                                text += `* [${index + 1}. ${s.title}](${s.uri})\n`; 
-                            });
-                        }
-                    }
-                    return text;
-                } else {
-                    throw new Error("Invalid response structure from the API.");
-                }
-
-            } catch (error) {
-                if (attempt === maxRetries - 1) {
-                    throw new Error(`Failed to call ${modelName} after ${maxRetries} attempts: ${error.message}`);
-                }
-                console.warn(`Attempt ${attempt + 1} failed. Retrying...`);
-            }
-        }
-        throw new Error("Failed to call API. Max retries reached."); 
-    }
-
-    // --- Expose functions to global scope for inline HTML event handlers ---
-    window.startNewChat = startNewChat;
-    window.sendMessage = sendMessage;
-    window.handleFileSelect = handleFileSelect; // New
-    window.clearSelectedFile = clearSelectedFile; // New
-    // --- End exposure ---
-
+function loadAllConversations(){
+  const d=localStorage.getItem('conversations');conversations=d?JSON.parse(d):[];
+  conversations.sort((a,b)=>b.updated_at-a.updated_at);renderConversationsList();
+}
+function saveAllConversations(){localStorage.setItem('conversations',JSON.stringify(conversations));renderConversationsList();}
+function loadChatHistory(id){return JSON.parse(localStorage.getItem('chat_'+id+'_messages')||'[]');}
+function saveChatHistory(id,h){localStorage.setItem('chat_'+id+'_messages',JSON.stringify(h));}
+async function saveMessage(role,text){if(!currentChatId)return;chatHistory.push({role,parts:[{text}]});saveChatHistory(currentChatId,chatHistory);
+  const idx=conversations.findIndex(c=>c.id===currentChatId);if(idx!=-1){conversations[idx].updated_at=Date.now();}
+  saveAllConversations();
+}
+function renderConversationsList(){
+  conversationsList.innerHTML='';
+  if(!conversations.length){conversationsList.innerHTML='<p class="text-gray-500">No chats yet</p>';return;}
+  conversations.forEach(c=>{
+    const b=document.createElement('button');
+    b.className=`w-full text-left p-3 rounded-lg ${c.id===currentChatId?'bg-blue-600 text-white':'bg-gray-800 text-gray-300 hover:bg-gray-700'}`;
+    b.textContent=c.title||'New Chat';b.onclick=()=>loadChat(c.id);conversationsList.appendChild(b);
+  });
+}
+function loadChat(id){
+  currentChatId=id;chatHistory=loadChatHistory(id);
+  renderConversationsList();chatContainer.innerHTML='';
+  appendMessage('model','Welcome back! Here’s your conversation history:');
+  chatHistory.forEach(m=>appendMessage(m.role,m.parts[0].text));
+  updateStatus('Chat Loaded','bg-green-600');
+  promptInput.disabled=false;sendButton.disabled=false;
+}
+function startNewChat(){
+  const id='chat-'+Date.now();const now=Date.now();
+  conversations.unshift({id,title:'New Conversation',created_at:now,updated_at:now});
+  saveAllConversations();loadChat(id);
+}
+async function initPersistence(){
+  userId=localStorage.getItem('localUserId')||'local-'+Math.random().toString(36).substring(2,9);
+  localStorage.setItem('localUserId',userId);
+  userIdDisplay.textContent='User ID: '+userId;
+  loadAllConversations();
+  if(conversations.length)loadChat(conversations[0].id);else startNewChat();
+  updateStatus('Ready (Idle)','bg-green-600');
+}
+window.onload=initPersistence;
+
+async function sendMessage(){
+  if(isTyping)return;
+  const prompt=promptInput.value.trim();if(!prompt)return;
+  appendMessage('user',prompt);await saveMessage('user',prompt);
+  promptInput.value='';isTyping=true;sendButton.disabled=true;promptInput.disabled=true;
+  typingIndicator.classList.remove('hidden');
+  const {textElement,bubbleContent}=appendMessage('model','...',true);
+  try{
+    const res=await fakeAiResponse(prompt); // simulate AI
+    typingIndicator.classList.add('hidden');
+    await typeMessage(textElement,res,8);
+    await saveMessage('model',res);
+  }catch(e){
+    bubbleContent.innerHTML=`<p class='text-red-400'>Error: ${e.message}</p>`;
+  }finally{
+    isTyping=false;sendButton.disabled=false;promptInput.disabled=false;promptInput.focus();
+    updateStatus('Ready (Idle)','bg-green-600');
+  }
+}
+
+// ---- SIMULATED AI (replace with Gemini call if needed) ----
+function fakeAiResponse(q){
+  return new Promise(res=>{
+    setTimeout(()=>{
+      res(`**Response:** You said “${q}”.<br><br>Here’s some markdown:\n\n- Example\n- ChatGPT-style typing\n\n\`Code Sample\`\n\nDone!`);
+    },1000);
+  });
+}
 </script>
+</body>
+</html>
