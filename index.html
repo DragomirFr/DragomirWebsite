@@ -19,7 +19,7 @@
       color: white;
     }
 
-    /* VORTEX BACKGROUND */
+    /* BACKGROUND VORTEX */
     body::before {
       content: '';
       position: fixed;
@@ -31,7 +31,10 @@
       filter: blur(30px);
       z-index: -3;
     }
-    @keyframes vortexRotate { from {transform:translate(-50%,-50%) rotate(0deg);} to {transform:translate(-50%,-50%) rotate(360deg);} }
+    @keyframes vortexRotate {
+      from {transform:translate(-50%,-50%) rotate(0deg);}
+      to {transform:translate(-50%,-50%) rotate(360deg);}
+    }
 
     /* STARFIELD */
     #starfield {
@@ -50,68 +53,78 @@
       animation: corePulse 6s ease-in-out infinite alternate;
       z-index: 0;
     }
-    @keyframes corePulse { 0% {transform:translate(-50%,-50%) scale(1);} 100% {transform:translate(-50%,-50%) scale(1.08);} }
+    @keyframes corePulse {
+      0% {transform:translate(-50%,-50%) scale(1);}
+      100% {transform:translate(-50%,-50%) scale(1.08);}
+    }
 
-    /* MENU ICON BUTTON */
+    /* MENU BUTTON */
     .menu-btn {
       position: fixed;
-      top: 25px; left: 25px;
-      width: 55px; height: 55px;
+      top: 20px; left: 20px;
+      width: 58px; height: 58px;
       border-radius: 50%;
-      background: rgba(20,30,50,0.4);
-      border: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 0 15px rgba(100,150,255,0.2);
+      background: rgba(20,30,50,0.45);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 0 20px rgba(100,150,255,0.2);
       display: flex; align-items: center; justify-content: center;
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
       cursor: pointer;
       transition: all 0.3s ease;
-      z-index: 20;
+      z-index: 30;
     }
     .menu-btn:hover {
-      transform: scale(1.1);
+      transform: scale(1.08);
       box-shadow: 0 0 25px rgba(100,150,255,0.5);
     }
-
     .menu-icon {
       color: #a0bfff;
-      width: 26px; height: 26px;
+      width: 28px; height: 28px;
       transition: all 0.3s ease;
     }
     .menu-btn:hover .menu-icon {
-      color: #ffffff;
+      color: #fff;
       filter: drop-shadow(0 0 6px rgba(100,150,255,0.7));
     }
 
-    /* SIDEBAR PANEL (3D depth) */
+    /* SIDEBAR PANEL */
     .sidebar-panel {
       position: fixed; top: 0; left: 0;
       height: 100vh; width: 280px;
-      background: rgba(20,25,40,0.65);
+      background: rgba(20,25,40,0.7);
       backdrop-filter: blur(20px) brightness(1.2);
-      border-right: 1px solid rgba(255,255,255,0.08);
+      border-right: 1px solid rgba(255,255,255,0.1);
       border-radius: 0 20px 20px 0;
       box-shadow: 0 0 60px rgba(0,0,0,0.6);
-      transform: translateX(-320px) scale(0.95);
+      transform: translateX(-320px) scale(0.96);
       opacity: 0;
-      transition: all 0.4s cubic-bezier(0.23,1,0.32,1);
+      transition: all 0.45s cubic-bezier(0.23,1,0.32,1);
       display: flex; flex-direction: column;
-      padding: 5rem 1.5rem;
-      z-index: 15;
+      align-items: center; justify-content: center;
+      z-index: 20;
     }
     .sidebar-panel.active {
       transform: translateX(0) scale(1);
       opacity: 1;
     }
 
+    /* SIDEBAR LINKS */
     .sidebar-link {
       display: flex; align-items: center;
       margin: 1rem 0;
       color: #c0d4ff;
       font-weight: 600;
-      font-size: 1rem;
-      padding: 0.75rem 1rem;
+      font-size: 1.05rem;
+      padding: 0.8rem 1rem;
       border-radius: 12px;
+      width: 70%;
+      justify-content: flex-start;
       transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    .sidebar-panel.active .sidebar-link {
+      animation: slideIn 0.5s ease forwards;
     }
     .sidebar-link i {
       margin-right: 0.8rem; width: 22px;
@@ -121,6 +134,9 @@
       box-shadow: 0 0 15px rgba(100,150,255,0.3);
       color: #fff;
       transform: translateX(4px);
+    }
+    @keyframes slideIn {
+      to {opacity: 1; transform: translateX(0);}
     }
 
     /* TITLE */
@@ -133,13 +149,26 @@
       to {text-shadow: 0 0 35px rgba(160,200,255,0.9);}
     }
 
-    /* FADE-IN */
-    .fade-in { animation: fadeIn 1.5s ease-out forwards; opacity: 0; }
-    @keyframes fadeIn { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
-    .content-item:nth-child(1){animation-delay:0.2s;}
-    .content-item:nth-child(2){animation-delay:0.4s;}
-    .content-item:nth-child(3){animation-delay:0.6s;}
-    .content-item:nth-child(4){animation-delay:0.8s;}
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .sidebar-panel {
+        width: 220px;
+      }
+      .menu-btn {
+        width: 52px; height: 52px;
+      }
+      .sidebar-link {
+        font-size: 0.95rem;
+      }
+    }
+    @media (max-width: 480px) {
+      .sidebar-panel {
+        width: 200px;
+      }
+      .sidebar-link {
+        font-size: 0.9rem;
+      }
+    }
   </style>
 </head>
 
@@ -151,10 +180,10 @@
 
   <!-- SIDEBAR PANEL -->
   <div class="sidebar-panel" id="sidebar">
-    <a href="/ai" class="sidebar-link"><i data-lucide="cpu"></i> AI</a>
-    <a href="/clock" class="sidebar-link"><i data-lucide="clock"></i> Clock</a>
-    <a href="/code" class="sidebar-link"><i data-lucide="code"></i> Code</a>
-    <a href="/weather" class="sidebar-link"><i data-lucide="cloud-sun"></i> Weather</a>
+    <a href="/ai" class="sidebar-link" style="animation-delay:0.1s;"><i data-lucide="cpu"></i> AI</a>
+    <a href="/clock" class="sidebar-link" style="animation-delay:0.25s;"><i data-lucide="clock"></i> Clock</a>
+    <a href="/code" class="sidebar-link" style="animation-delay:0.4s;"><i data-lucide="code"></i> Code</a>
+    <a href="/weather" class="sidebar-link" style="animation-delay:0.55s;"><i data-lucide="cloud-sun"></i> Weather</a>
   </div>
 
   <!-- STARFIELD -->
@@ -208,8 +237,8 @@
       lucide.createIcons();
     });
 
-    document.addEventListener('click', (e)=>{
-      if(!sidebar.contains(e.target) && !menuBtn.contains(e.target)){
+    document.addEventListener('click', (e) => {
+      if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
         sidebar.classList.remove('active');
         menuIcon.setAttribute('data-lucide', 'menu');
         lucide.createIcons();
