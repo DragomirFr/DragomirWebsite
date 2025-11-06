@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 Not Found | Dragomir</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* Rotating glow background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 150vw;
+      height: 150vw;
+      /* Adjusted gradient for a slightly cooler/subtler tone */
+      background: radial-gradient(circle, rgba(70, 70, 70, 0.1), transparent 70%);
+      transform: translate(-50%, -50%) rotate(0deg);
+      animation: bg-rotate 45s linear infinite;
+      z-index: -1;
+    }
+
+    @keyframes bg-rotate {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* Floating circles (kept from your inspiration) */
+    .circles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: -2;
+    }
+    .circles li {
+      position: absolute;
+      display: block;
+      list-style: none;
+      width: 20px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.07); /* Slightly reduced opacity */
+      animation: animate-circles 25s linear infinite;
+      bottom: -150px;
+      border-radius: 50%; /* Make them circles immediately */
+    }
+    .circles li:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
+    .circles li:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
+    .circles li:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
+    .circles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
+    .circles li:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
+    .circles li:nth-child(6) { left: 75%; width: 110px; height: 110px; animation-delay: 3s; }
+    .circles li:nth-child(7) { left: 35%; width: 150px; height: 150px; animation-delay: 7s; }
+    .circles li:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; }
+    .circles li:nth-child(9) { left: 20%; width: 15px; height: 15px; animation-delay: 2s; animation-duration: 35s; }
+    .circles li:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; }
+
+    @keyframes animate-circles {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 50%; }
+      100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 50%; }
+    }
+
+    /* Glowing title */
+    .title-glow {
+      animation: pulse-glow 3s infinite alternate ease-in-out;
+    }
+    @keyframes pulse-glow {
+      from { text-shadow: 0 0 10px rgba(200, 200, 200, 0.6), 0 0 20px rgba(200, 200, 200, 0.4); }
+      to { text-shadow: 0 0 20px rgba(200, 200, 200, 0.8), 0 0 40px rgba(200, 200, 200, 0.6); }
+    }
+
+    /* 404 Text Style */
+    .error-code {
+      font-size: 15rem; /* Larger font size for impact */
+      line-height: 1;
+      opacity: 0.15; /* Subtly faded into the background */
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 0;
+    }
+
+    /* Button Hover Effect */
+    .home-button:hover {
+      background-color: #3f3f46; /* Gray-700 */
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen flex items-center justify-center p-4">
+
+  <ul class="circles">
+    <li></li><li></li><li></li><li></li><li></li>
+    <li></li><li></li><li></li><li></li><li></li>
+  </ul>
+
+  <div class="error-code font-black text-gray-800 hidden lg:block">404</div>
+
+  <div class="text-center z-10">
+    <h1 class="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-2 text-gray-300 title-glow">
+      Dragomir
+    </h1>
+
+    <p class="text-xl md:text-2xl text-red-500 font-bold uppercase tracking-widest mb-6">
+      Error: Page Not Found
+    </p>
+
+    <p class="text-lg text-gray-400 mb-8 max-w-lg mx-auto">
+      The page you are looking for might have been removed, or is temporarily unavailable.
+    </p>
+
+    <a href="/" class="home-button inline-block px-8 py-3 bg-gray-800 text-white font-semibold uppercase tracking-wider rounded-lg transition duration-300 ease-in-out">
+     Go Home
+    </a>
+  </div>
+
+</body>
+</html>
