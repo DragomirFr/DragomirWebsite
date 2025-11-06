@@ -8,8 +8,5 @@
     { "source": "/clock", "destination": "/clock.html" },
     { "source": "/ai", "destination": "/ai.html" },
     { "source": "/iptv", "destination": "/iptv.html" }
-  ],
-  "error": {
-    "notFound": "/404.html"
-  }
+  ]
 }
