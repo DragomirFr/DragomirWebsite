@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dragomir</title>
+  <title>Dragomir Interface</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
@@ -12,96 +12,152 @@
       position: relative;
       overflow: hidden;
       background: #000;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
     }
 
-    /* Rotating glow background */
+    /* --- 1. Black Hole / Space Vortex Background (Replaces Rotating Glow) --- */
+    /* This combines multiple radial and conic gradients for the effect */
     body::before {
       content: '';
       position: fixed;
       top: 50%;
       left: 50%;
-      width: 150vw;
-      height: 150vw;
-      background: radial-gradient(circle, rgba(100, 100, 100, 0.1), transparent 70%);
+      width: 200vw; /* Larger to ensure coverage for rotation */
+      height: 200vw;
       transform: translate(-50%, -50%) rotate(0deg);
-      animation: bg-rotate 45s linear infinite;
+      background: 
+        /* Outer starfield / nebula */
+        radial-gradient(circle at 50% 50%, rgba(20, 20, 30, 0.4) 10%, rgba(0, 0, 0, 0.9) 80%),
+        /* Inner nebula / light swirl */
+        radial-gradient(ellipse at 50% 50%, rgba(50, 50, 70, 0.2) 0%, transparent 60%),
+        radial-gradient(ellipse at 55% 45%, rgba(40, 40, 60, 0.15) 0%, transparent 60%),
+        /* Central black hole "event horizon" */
+        radial-gradient(circle at 50% 50%, #0a0a0c 0%, #000000 20%, transparent 50%),
+        /* Accretion disk inner glow */
+        conic-gradient(from 0deg at 50% 50%, #3a0a0c 0deg, #5c1c1f 30deg, #b34f52 60deg, #f7d5c5 90deg, #f7d5c5 120deg, #b34f52 150deg, #5c1c1f 180deg, #3a0a0c 210deg, transparent 240deg, transparent 360deg);
+        
+      background-size: cover;
+      background-position: center;
+      /* Performance Hint */
+      will-change: transform, background;
+      animation: space-vortex-rotate 120s linear infinite, space-vortex-pulse 15s ease-in-out infinite alternate;
       z-index: -1;
+      filter: blur(10px); /* Apply a slight blur to soften the gradients */
     }
 
-    @keyframes bg-rotate {
+    @keyframes space-vortex-rotate {
       from { transform: translate(-50%, -50%) rotate(0deg); }
       to { transform: translate(-50%, -50%) rotate(360deg); }
     }
 
-    /* Floating circles */
-    .circles {
+    @keyframes space-vortex-pulse {
+      0% { opacity: 0.8; filter: blur(10px); }
+      50% { opacity: 1; filter: blur(8px); }
+      100% { opacity: 0.8; filter: blur(10px); }
+    }
+
+    /* --- 2. Animated Grid Field --- */
+    .grid-field::after {
+      content: '';
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
       z-index: -2;
-    }
-    .circles li {
-      position: absolute;
-      display: block;
-      list-style: none;
-      width: 20px;
-      height: 20px;
-      background: rgba(255, 255, 255, 0.1);
-      animation: animate-circles 25s linear infinite;
-      bottom: -150px;
-    }
-    .circles li:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
-    .circles li:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
-    .circles li:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
-    .circles li:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
-    .circles li:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
-    .circles li:nth-child(6) { left: 75%; width: 110px; height: 110px; animation-delay: 3s; }
-    .circles li:nth-child(7) { left: 35%; width: 150px; height: 150px; animation-delay: 7s; }
-    .circles li:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; }
-    .circles li:nth-child(9) { left: 20%; width: 15px; height: 15px; animation-delay: 2s; animation-duration: 35s; }
-    .circles li:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; }
-
-    @keyframes animate-circles {
-      0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 0; }
-      100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 50%; }
+      background: 
+          repeating-linear-gradient(0deg, #1f2937 0, #1f2937 1px, transparent 1px, transparent 40px),
+          repeating-linear-gradient(90deg, #1f2937 0, #1f2937 1px, transparent 1px, transparent 40px);
+      background-size: 40px 40px;
+      opacity: 0.08; 
+      /* Performance Hint */
+      will-change: background-position, opacity; 
+      animation: grid-pan 120s linear infinite; 
     }
 
-    /* Glowing title */
+    @keyframes grid-pan {
+      from { background-position: 0 0; }
+      to { background-position: 400px 400px; } 
+    }
+
+    /* --- 3. Subtle Particle Stream Animation --- */
+    body::after { 
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -3; /* Place behind other background elements */
+      background: 
+        radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.04) 1px, transparent 2px),
+        radial-gradient(circle at 30% 70%, rgba(255, 255, 255, 0.03) 1px, transparent 2px),
+        radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.05) 1px, transparent 2px),
+        radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.04) 1px, transparent 2px),
+        radial-gradient(circle at 90% 40%, rgba(255, 255, 255, 0.03) 1px, transparent 2px),
+        radial-gradient(circle at 20% 90%, rgba(255, 255, 255, 0.02) 1px, transparent 2px),
+        radial-gradient(circle at 80% 15%, rgba(255, 255, 255, 0.04) 1px, transparent 2px),
+        radial-gradient(circle at 45% 55%, rgba(255, 255, 255, 0.03) 1px, transparent 2px);
+      background-size: 100% 100%; 
+      /* Performance Hint */
+      will-change: transform;
+      animation: particle-stream 180s linear infinite; 
+    }
+
+    @keyframes particle-stream {
+      from { transform: translateY(0) translateX(0) scale(1); }
+      to { transform: translateY(-100vh) translateX(-50vw) scale(1.2); }
+    }
+
+    /* --- 4. Glowing Title --- */
     .title-glow {
-      animation: pulse-glow 3s infinite alternate ease-in-out;
+      animation: pulse-glow 3s infinite alternate ease-in-out; 
+      color: #e0e0e0;
+      /* Performance Hint */
+      will-change: text-shadow, transform;
     }
     @keyframes pulse-glow {
-      from { text-shadow: 0 0 10px rgba(200, 200, 200, 0.6), 0 0 20px rgba(200, 200, 200, 0.4); }
-      to { text-shadow: 0 0 20px rgba(200, 200, 200, 0.8), 0 0 40px rgba(200, 200, 200, 0.6); }
+      from { text-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 0 30px rgba(255, 255, 255, 0.4); }
+      to { text-shadow: 0 0 35px rgba(255, 255, 255, 0.8), 0 0 60px rgba(255, 255, 255, 0.6); }
     }
+
+    /* Content Fade-in and Stagger */
+    .fade-in {
+        animation: fadeIn 1.5s ease-out forwards;
+        opacity: 0;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .content-item:nth-child(1) { animation-delay: 0.2s; }
+    .content-item:nth-child(2) { animation-delay: 0.4s; }
+    .content-item:nth-child(3) { animation-delay: 0.6s; }
+    .content-item:nth-child(4) { animation-delay: 0.8s; }
   </style>
 </head>
-<body class="bg-gray-950 text-white min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-950 grid-field p-4">
 
-  <ul class="circles">
-    <li></li><li></li><li></li><li></li><li></li>
-    <li></li><li></li><li></li><li></li><li></li>
-  </ul>
-
-  <div class="text-center">
-    <h1 class="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-4 text-gray-300 title-glow">
+  <div class="text-center z-10">
+    <h1 class="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-4 title-glow">
       Dragomir
     </h1>
 
     <div class="mt-4 space-y-2">
-      <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest">
+      <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest fade-in content-item">
         <span id="uk-time"></span>
       </div>
-      <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest">
+      <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest fade-in content-item">
         <span id="date"></span>
       </div>
-      <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest mt-4 pt-2 border-t border-gray-700">
+      <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest mt-4 pt-2 border-t border-gray-700 fade-in content-item">
         <span id="weather-info"></span>
       </div>
-      <div class="mt-6 pt-4 border-t border-gray-700">
+      <div class="mt-6 pt-4 border-t border-gray-700 fade-in content-item">
         <blockquote class="text-lg italic text-gray-300">
           <p class="mb-2" id="quote-text"></p>
           <footer class="text-sm text-gray-500 not-italic" id="quote-author"></footer>
@@ -116,7 +172,7 @@
       const now = new Date();
       const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/London' };
       const ukTime = now.toLocaleTimeString('en-GB', timeOptions);
-      document.getElementById('uk-time').textContent = ukTime + ' UK Time';
+      document.getElementById('uk-time').textContent = ukTime + ' UK TIME';
 
       const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       document.getElementById('date').textContent = now.toLocaleDateString('en-GB', dateOptions);
@@ -126,7 +182,7 @@
 
     // Weather
     async function fetchWeather() {
-      const lat = 52.2319, lon = -0.8954; // Northampton
+      const lat = 52.2319, lon = -0.8954; 
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
 
       try {
@@ -134,37 +190,50 @@
         const data = await res.json();
         const weather = data.current_weather;
         const codes = {
-          0: "Clear", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+          0: "Clear Sky", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
           45: "Fog", 48: "Fog", 51: "Drizzle", 53: "Drizzle", 55: "Drizzle",
-          61: "Rain", 63: "Rain", 65: "Heavy rain",
+          61: "Rain", 63: "Rain", 65: "Heavy Rain",
           71: "Snow", 73: "Snow", 75: "Snow",
           95: "Thunderstorm", 96: "Thunderstorm", 99: "Thunderstorm"
         };
-        const desc = codes[weather.weathercode] || "Unknown";
+        const desc = codes[weather.weathercode] || "Unknown Conditions";
         const temp = Math.round(weather.temperature);
-        document.getElementById('weather-info').textContent = `${temp}°C, ${desc}`;
+        document.getElementById('weather-info').textContent = `NORTHAMPTON: ${temp}°C, ${desc}`;
       } catch {
-        document.getElementById('weather-info').textContent = "Weather unavailable";
+        document.getElementById('weather-info').textContent = "WEATHER DATA OFFLINE";
       }
     }
     fetchWeather();
-    setInterval(fetchWeather, 60);
+    setInterval(fetchWeather, 1800000); 
 
     // Quote
     async function fetchDailyQuote() {
       const url = "https://zenquotes.io/api/random";
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        document.getElementById('quote-text').textContent = `"${data[0].q}"`;
-        document.getElementById('quote-author').textContent = `- ${data[0].a}`;
-      } catch {
-        document.getElementById('quote-text').textContent = `"When you durst do it, then you were a man."`;
-        document.getElementById('quote-author').textContent = "- Lady Macbeth x Oskar Kozub";
+      const maxRetries = 3;
+      let attempt = 0;
+
+      while (attempt < maxRetries) {
+          try {
+              const res = await fetch(url);
+              if (!res.ok) throw new Error('API request failed');
+
+              const data = await res.json();
+              document.getElementById('quote-text').textContent = `"${data[0].q}"`;
+              document.getElementById('quote-author').textContent = `- ${data[0].a}`;
+              return; 
+          } catch (error) {
+              attempt++;
+              if (attempt < maxRetries) {
+                  const delay = Math.pow(2, attempt) * 1000;
+                  await new Promise(resolve => setTimeout(resolve, delay));
+              } else {
+                  document.getElementById('quote-text').textContent = `"When you durst do it, then you were a man."`;
+                  document.getElementById('quote-author').textContent = "- Lady Macbeth x Oskar Kozub";
+              }
+          }
       }
     }
     fetchDailyQuote();
   </script>
 </body>
 </html>
-
