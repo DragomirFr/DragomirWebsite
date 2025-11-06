@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dragomirs Website</title>
+  <title>Dragomir's Website</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
     body {
@@ -18,119 +19,123 @@
       color: white;
     }
 
-    /* --- BACKGROUND VORTEX --- */
+    /* VORTEX BACKGROUND */
     body::before {
       content: '';
       position: fixed;
-      top: 50%;
-      left: 50%;
-      width: 200vw;
-      height: 200vw;
+      top: 50%; left: 50%;
+      width: 200vw; height: 200vw;
       transform: translate(-50%, -50%) rotate(0deg);
-      background: conic-gradient(
-        from 0deg at 50% 50%,
-        #04080f 0deg,
-        #0a1122 90deg,
-        #0f1735 180deg,
-        #18244f 270deg,
-        #04080f 360deg
-      );
-      background-size: cover;
+      background: conic-gradient(from 0deg at 50% 50%, #04080f 0deg, #0a1122 90deg, #0f1735 180deg, #18244f 270deg, #04080f 360deg);
       animation: vortexRotate 160s linear infinite;
-      z-index: -3;
       filter: blur(30px);
+      z-index: -3;
     }
+    @keyframes vortexRotate { from {transform:translate(-50%,-50%) rotate(0deg);} to {transform:translate(-50%,-50%) rotate(360deg);} }
 
-    @keyframes vortexRotate {
-      from { transform: translate(-50%, -50%) rotate(0deg); }
-      to { transform: translate(-50%, -50%) rotate(360deg); }
-    }
-
-    /* --- GRID OVERLAY --- */
-    .grid-field::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: -2;
-      background:
-        repeating-linear-gradient(0deg, #1f2937 0, #1f2937 1px, transparent 1px, transparent 40px),
-        repeating-linear-gradient(90deg, #1f2937 0, #1f2937 1px, transparent 1px, transparent 40px);
-      background-size: 40px 40px;
-      opacity: 0.07;
-      animation: grid-pan 120s linear infinite;
-    }
-
-    @keyframes grid-pan {
-      from { background-position: 0 0; }
-      to { background-position: 400px 400px; }
-    }
-
-    /* --- STARFIELD --- */
+    /* STARFIELD */
     #starfield {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-      pointer-events: none;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: -1; pointer-events: none;
     }
 
-    /* --- COSMIC CORE --- */
+    /* ENERGY CORE */
     .energy-core {
-      position: fixed;
-      top: 50%;
-      left: 50%;
+      position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 240px;
-      height: 240px;
+      width: 240px; height: 240px;
       border-radius: 50%;
       background: radial-gradient(circle at 50% 50%, #0d1b3a 0%, #050a18 60%, transparent 80%);
-      box-shadow:
-        0 0 50px 20px rgba(64, 148, 255, 0.15),
-        0 0 100px 60px rgba(128, 64, 255, 0.05);
-      overflow: hidden;
+      box-shadow: 0 0 60px 30px rgba(64,148,255,0.15);
       animation: corePulse 6s ease-in-out infinite alternate;
       z-index: 0;
     }
+    @keyframes corePulse { 0% {transform:translate(-50%,-50%) scale(1);} 100% {transform:translate(-50%,-50%) scale(1.08);} }
 
-    @keyframes corePulse {
-      0% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
-      100% { transform: translate(-50%, -50%) scale(1.08); filter: brightness(1.3); }
-    }
-
-    /* --- PARTICLES AROUND CORE --- */
-    .core-particle {
-      position: absolute;
-      width: 3px;
-      height: 3px;
+    /* MENU ICON BUTTON */
+    .menu-btn {
+      position: fixed;
+      top: 25px; left: 25px;
+      width: 55px; height: 55px;
       border-radius: 50%;
-      background: rgba(120,180,255,0.7);
-      animation: particleMove 8s linear infinite;
+      background: rgba(20,30,50,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 0 15px rgba(100,150,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(12px);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 20;
+    }
+    .menu-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 25px rgba(100,150,255,0.5);
     }
 
-    @keyframes particleMove {
-      from { transform: rotate(0deg) translateX(140px) rotate(0deg); opacity: 1; }
-      to { transform: rotate(360deg) translateX(140px) rotate(-360deg); opacity: 0; }
+    .menu-icon {
+      color: #a0bfff;
+      width: 26px; height: 26px;
+      transition: all 0.3s ease;
+    }
+    .menu-btn:hover .menu-icon {
+      color: #ffffff;
+      filter: drop-shadow(0 0 6px rgba(100,150,255,0.7));
     }
 
-    /* --- TITLE --- */
+    /* SIDEBAR PANEL (3D depth) */
+    .sidebar-panel {
+      position: fixed; top: 0; left: 0;
+      height: 100vh; width: 280px;
+      background: rgba(20,25,40,0.65);
+      backdrop-filter: blur(20px) brightness(1.2);
+      border-right: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0 20px 20px 0;
+      box-shadow: 0 0 60px rgba(0,0,0,0.6);
+      transform: translateX(-320px) scale(0.95);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.23,1,0.32,1);
+      display: flex; flex-direction: column;
+      padding: 5rem 1.5rem;
+      z-index: 15;
+    }
+    .sidebar-panel.active {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+
+    .sidebar-link {
+      display: flex; align-items: center;
+      margin: 1rem 0;
+      color: #c0d4ff;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+    .sidebar-link i {
+      margin-right: 0.8rem; width: 22px;
+    }
+    .sidebar-link:hover {
+      background: rgba(100,150,255,0.15);
+      box-shadow: 0 0 15px rgba(100,150,255,0.3);
+      color: #fff;
+      transform: translateX(4px);
+    }
+
+    /* TITLE */
     .title-glow {
       animation: pulse-glow 3s infinite alternate ease-in-out;
       color: #e0e0e0;
     }
-
     @keyframes pulse-glow {
-      from { text-shadow: 0 0 15px rgba(90, 150, 255, 0.6), 0 0 30px rgba(120, 200, 255, 0.4); }
-      to { text-shadow: 0 0 35px rgba(160, 200, 255, 0.9), 0 0 60px rgba(120, 180, 255, 0.7); }
+      from {text-shadow: 0 0 15px rgba(90,150,255,0.6);}
+      to {text-shadow: 0 0 35px rgba(160,200,255,0.9);}
     }
 
-    /* --- FADE-IN --- */
+    /* FADE-IN */
     .fade-in { animation: fadeIn 1.5s ease-out forwards; opacity: 0; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeIn { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
     .content-item:nth-child(1){animation-delay:0.2s;}
     .content-item:nth-child(2){animation-delay:0.4s;}
     .content-item:nth-child(3){animation-delay:0.6s;}
@@ -139,23 +144,33 @@
 </head>
 
 <body class="bg-gray-950 grid-field p-4">
-
-  <!-- Light-speed Starfield -->
-  <canvas id="starfield"></canvas>
-
-  <!-- Energy Core -->
-  <div class="energy-core">
-    <!-- orbiting particles -->
-    <div class="core-particle" style="animation-delay: 0s;"></div>
-    <div class="core-particle" style="animation-delay: 2s;"></div>
-    <div class="core-particle" style="animation-delay: 4s;"></div>
-    <div class="core-particle" style="animation-delay: 6s;"></div>
+  <!-- MENU BUTTON -->
+  <div class="menu-btn" id="menuBtn">
+    <i data-lucide="menu" class="menu-icon"></i>
   </div>
 
-  <!-- Main Content -->
+  <!-- SIDEBAR PANEL -->
+  <div class="sidebar-panel" id="sidebar">
+    <a href="/ai" class="sidebar-link"><i data-lucide="cpu"></i> AI</a>
+    <a href="/clock" class="sidebar-link"><i data-lucide="clock"></i> Clock</a>
+    <a href="/code" class="sidebar-link"><i data-lucide="code"></i> Code</a>
+    <a href="/weather" class="sidebar-link"><i data-lucide="cloud-sun"></i> Weather</a>
+  </div>
+
+  <!-- STARFIELD -->
+  <canvas id="starfield"></canvas>
+
+  <!-- ENERGY CORE -->
+  <div class="energy-core">
+    <div class="core-particle" style="animation-delay:0s;"></div>
+    <div class="core-particle" style="animation-delay:2s;"></div>
+    <div class="core-particle" style="animation-delay:4s;"></div>
+    <div class="core-particle" style="animation-delay:6s;"></div>
+  </div>
+
+  <!-- MAIN CONTENT -->
   <div class="text-center z-10">
     <h1 class="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-4 title-glow">Dragomir</h1>
-
     <div class="mt-4 space-y-2">
       <div class="text-gray-400 text-sm md:text-base font-medium uppercase tracking-widest fade-in content-item">
         <span id="uk-time"></span>
@@ -176,36 +191,54 @@
   </div>
 
   <script>
-    /* TIME + DATE */
+    lucide.createIcons();
+
+    // Menu toggle
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const menuIcon = menuBtn.querySelector('i');
+
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+      if (sidebar.classList.contains('active')) {
+        menuIcon.setAttribute('data-lucide', 'x');
+      } else {
+        menuIcon.setAttribute('data-lucide', 'menu');
+      }
+      lucide.createIcons();
+    });
+
+    document.addEventListener('click', (e)=>{
+      if(!sidebar.contains(e.target) && !menuBtn.contains(e.target)){
+        sidebar.classList.remove('active');
+        menuIcon.setAttribute('data-lucide', 'menu');
+        lucide.createIcons();
+      }
+    });
+
+    // Time + Date
     function updateDisplay() {
       const now = new Date();
-      const tOpts = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/London' };
+      const tOpts = {hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Europe/London'};
       document.getElementById('uk-time').textContent = now.toLocaleTimeString('en-GB', tOpts) + ' UK TIME';
-      document.getElementById('date').textContent = now.toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+      document.getElementById('date').textContent = now.toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
     }
-    updateDisplay();
-    setInterval(updateDisplay, 1000);
+    updateDisplay(); setInterval(updateDisplay,1000);
 
-    /* WEATHER */
+    // Weather
     async function fetchWeather(){
       const lat=52.2319, lon=-0.8954;
       const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
       try{
-        const res=await fetch(url);
-        const data=await res.json();
+        const res=await fetch(url); const data=await res.json();
         const w=data.current_weather;
-        const desc={
-          0:"Clear Sky",1:"Mainly Clear",2:"Partly Cloudy",3:"Overcast",
-          45:"Fog",48:"Fog",51:"Drizzle",53:"Drizzle",55:"Drizzle",
-          61:"Rain",63:"Rain",65:"Heavy Rain",71:"Snow",73:"Snow",75:"Snow",
-          95:"Thunderstorm",96:"Thunderstorm",99:"Thunderstorm"
-        }[w.weathercode] || "Unknown";
+        const desc={0:"Clear Sky",1:"Mainly Clear",2:"Partly Cloudy",3:"Overcast",45:"Fog",48:"Fog",51:"Drizzle",53:"Drizzle",55:"Drizzle",61:"Rain",63:"Rain",65:"Heavy Rain",71:"Snow",73:"Snow",75:"Snow",95:"Thunderstorm",96:"Thunderstorm",99:"Thunderstorm"}[w.weathercode]||"Unknown";
         document.getElementById('weather-info').textContent=`NORTHAMPTON: ${Math.round(w.temperature)}°C, ${desc}`;
       }catch{document.getElementById('weather-info').textContent="WEATHER DATA OFFLINE";}
     }
     fetchWeather(); setInterval(fetchWeather,1800000);
 
-    /* QUOTE */
+    // Quote
     async function fetchDailyQuote(){
       try{
         const res=await fetch("https://zenquotes.io/api/random");
@@ -219,42 +252,19 @@
     }
     fetchDailyQuote();
 
-    /* STARFIELD */
-    const canvas=document.getElementById('starfield');
-    const ctx=canvas.getContext('2d');
-    let stars=[];
-    let w,h,cx,cy;
-    function resize(){
-      w=canvas.width=window.innerWidth;
-      h=canvas.height=window.innerHeight;
-      cx=w/2; cy=h/2;
-      stars=Array.from({length:250},()=>({
-        x:Math.random()*w-cx, y:Math.random()*h-cy, z:Math.random()*w, pz:Math.random()*w
-      }));
-    }
-    window.addEventListener('resize',resize); resize();
-
+    // Starfield
+    const canvas=document.getElementById('starfield'), ctx=canvas.getContext('2d');
+    let stars=[], w,h,cx,cy;
+    function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;cx=w/2;cy=h/2;stars=Array.from({length:250},()=>({x:Math.random()*w-cx,y:Math.random()*h-cy,z:Math.random()*w,pz:Math.random()*w}));}
+    addEventListener('resize',resize); resize();
     function animate(){
-      ctx.fillStyle="rgba(0,0,0,0.3)";
-      ctx.fillRect(0,0,w,h);
-      ctx.strokeStyle="rgba(180,200,255,0.8)";
-      ctx.lineWidth=1;
-      ctx.beginPath();
-      stars.forEach(s=>{
-        s.z-=8;
-        if(s.z<=0){s.z=w;s.x=Math.random()*w-cx;s.y=Math.random()*h-cy;s.pz=s.z;}
-        const sx=(s.x/s.z)*cx+cx;
-        const sy=(s.y/s.z)*cy+cy;
-        const px=(s.x/s.pz)*cx+cx;
-        const py=(s.y/s.pz)*cy+cy;
-        s.pz=s.z;
-        ctx.moveTo(px,py); ctx.lineTo(sx,sy);
-      });
-      ctx.stroke();
-      requestAnimationFrame(animate);
-    }
-    animate();
+      ctx.fillStyle="rgba(0,0,0,0.3)"; ctx.fillRect(0,0,w,h);
+      ctx.strokeStyle="rgba(180,200,255,0.8)"; ctx.lineWidth=1; ctx.beginPath();
+      for(const s of stars){s.z-=8;if(s.z<=0){s.z=w;s.x=Math.random()*w-cx;s.y=Math.random()*h-cy;s.pz=s.z;}
+        const sx=(s.x/s.z)*cx+cx, sy=(s.y/s.z)*cy+cy, px=(s.x/s.pz)*cx+cx, py=(s.y/s.pz)*cy+cy;
+        s.pz=s.z;ctx.moveTo(px,py);ctx.lineTo(sx,sy);}
+      ctx.stroke(); requestAnimationFrame(animate);
+    } animate();
   </script>
 </body>
 </html>
-
