@@ -1,95 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dragomir's Editor - Copyright</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #0A0A10;
-            color: #E0E0E0;
-            overflow: hidden;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragomir's Editor - Copyright</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 
-        /* Royal blue glow effect for the card */
-        @keyframes royal-glow {
-            0%, 100% { box-shadow: 0 0 8px #4169E1, 0 0 16px #4169E1; }
-            50% { box-shadow: 0 0 24px #4169E1, 0 0 40px #4169E1; }
-        }
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at top, #0a0a14 0%, #040408 100%);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e0e0e0;
+      position: relative;
+    }
 
-        /* More dynamic background grid with a slight shimmer */
-        @keyframes grid-shimmer {
-            0% { background-position: 0 0; }
-            100% { background-position: -200% -200%; }
-        }
+    /* Aurora background shimmer */
+    .aurora {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(115deg,
+        rgba(65,105,225,0.25),
+        rgba(100,149,237,0.05),
+        rgba(72,61,139,0.15));
+      filter: blur(100px);
+      animation: auroraShift 25s ease-in-out infinite alternate;
+      z-index: 0;
+    }
+    @keyframes auroraShift {
+      0% { transform: translate(0%, 0%) rotate(0deg); }
+      100% { transform: translate(-10%, -10%) rotate(15deg); }
+    }
 
-        .animated-bg {
-            position: relative;
-            background: #0A0A10;
-            background-image: 
-                linear-gradient(to right, rgba(65, 105, 225, 0.15) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(65, 105, 225, 0.15) 1px, transparent 1px);
-            background-size: 40px 40px;
-            animation: grid-shimmer 45s linear infinite;
-        }
+    /* Floating Orbs */
+    .orb {
+      position: absolute;
+      background: radial-gradient(circle, rgba(65,105,225,0.4), rgba(65,105,225,0));
+      border-radius: 50%;
+      filter: blur(35px);
+      z-index: 0;
+      animation: float 18s ease-in-out infinite;
+    }
+    .orb:nth-child(1) { width: 150px; height: 150px; top: 10%; left: 15%; animation-delay: 0s; }
+    .orb:nth-child(2) { width: 200px; height: 200px; bottom: 10%; right: 10%; animation-delay: 4s; }
+    .orb:nth-child(3) { width: 120px; height: 120px; top: 45%; right: 25%; animation-delay: 2s; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-60px); }
+    }
 
-        .card {
-            background-color: rgba(16, 20, 26, 0.85);
-            border-radius: 1.5rem; /* Slightly more rounded */
-            backdrop-filter: blur(12px); /* Increased blur */
-            border: 1px solid #4169E1;
-            position: relative;
-            z-index: 10;
-            animation: royal-glow 4s infinite alternate;
-        }
+    /* Moving grid overlay */
+    .grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(65,105,225,0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(65,105,225,0.08) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: moveGrid 80s linear infinite;
+      opacity: 0.3;
+      z-index: 1;
+    }
+    @keyframes moveGrid {
+      from { background-position: 0 0; }
+      to { background-position: -200px -200px; }
+    }
 
-        /* Floating background orbs, changed color to match the theme */
-        .orb {
-            position: absolute;
-            background: radial-gradient(circle, rgba(65, 105, 225, 0.6), rgba(65, 105, 225, 0));
-            border-radius: 50%;
-            z-index: 0;
-            animation: float 20s infinite ease-in-out;
-            filter: blur(15px);
-        }
+    /* Main card */
+    .card {
+      position: relative;
+      z-index: 2;
+      background: rgba(12,14,20,0.8);
+      border: 1px solid rgba(65,105,225,0.4);
+      border-radius: 1.5rem;
+      backdrop-filter: blur(20px);
+      padding: 3rem 2.5rem;
+      max-width: 750px;
+      box-shadow: 0 0 50px rgba(65,105,225,0.3);
+      text-align: center;
+      overflow: hidden;
+      animation: fadeInCard 1.4s ease-out forwards;
+    }
+    @keyframes fadeInCard {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-70px) rotate(180deg); }
-        }
+    /* Typing animation for title */
+    .typewriter {
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 2px solid #4169e1;
+      width: 0;
+      margin: 0 auto 1rem;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      background: linear-gradient(90deg, #7aa2ff, #4169e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation:
+        typing 3s steps(30, end) forwards,
+        blink 0.8s step-end infinite;
+    }
 
-        .orb-1 { width: 60px; height: 60px; top: 10%; left: 15%; animation-duration: 16s; }
-        .orb-2 { width: 90px; height: 90px; bottom: 8%; right: 10%; animation-duration: 22s; }
-        .orb-3 { width: 70px; height: 70px; top: 35%; right: 25%; animation-duration: 18s; }
-        .orb-4 { width: 50px; height: 50px; bottom: 25%; left: 30%; animation-duration: 20s; }
-        .orb-5 { width: 100px; height: 100px; top: 40%; left: 40%; animation-duration: 25s; }
+    @keyframes typing {
+      from { width: 0; }
+      to { width: 100%; }
+    }
 
-        /* Responsive typography */
-        @media (max-width: 640px) {
-            h1 { font-size: 2rem; }
-            p { font-size: 0.9rem; }
-        }
-    </style>
+    @keyframes blink {
+      0%, 50% { border-color: #4169e1; }
+      51%, 100% { border-color: transparent; }
+    }
+
+    /* Keep text visible and remove cursor cleanly */
+    .typewriter.done {
+      width: 100%;
+      border-right: none;
+    }
+
+    /* Glow pulse */
+    .glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(65,105,225,0.3), rgba(65,105,225,0));
+      filter: blur(60px);
+      z-index: 0;
+      opacity: 0;
+      animation: pulseGlow 4s ease-in-out 3s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    /* Paragraph fade-in after typing */
+    p {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: #c8c8d8;
+      line-height: 1.7;
+      margin-top: 1.5rem;
+      opacity: 0;
+      animation: fadeInText 1.5s ease-out 3.5s forwards;
+    }
+    @keyframes fadeInText {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 640px) {
+      .card { padding: 2rem 1.5rem; }
+    }
+  </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4 animated-bg">
-    <!-- Floating orbs -->
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-    <div class="orb orb-4"></div>
-    <div class="orb orb-5"></div>
 
-    <!-- Main content container -->
-    <div class="max-w-xl mx-auto text-center card p-8 md:p-12 lg:p-16">
-        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 text-white leading-tight">
-            The Code is Mine.
-        </h1>
-        <p class="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-300 leading-relaxed">
-            All intellectual property created and compiled within the domain of Dragomir's Editor belongs exclusively to Dragomir. By proceeding, you acknowledge and accept these terms.
-        </p>
-    </div>
+<body>
+  <div class="aurora"></div>
+  <div class="grid"></div>
+  <div class="orb"></div>
+  <div class="orb"></div>
+  <div class="orb"></div>
+
+  <div class="card">
+    <div class="glow"></div>
+    <h1 class="typewriter" id="title">The Code is Mine.</h1>
+    <p>
+      All intellectual property created and compiled within the domain of
+      <strong>Dragomir’s Editor</strong> belongs exclusively to Dragomir.  
+      By proceeding, you acknowledge and accept these terms.
+    </p>
+  </div>
+
+  <script>
+    // After typing animation finishes, fix text width and hide cursor
+    setTimeout(() => {
+      const title = document.getElementById('title');
+      title.classList.add('done');
+    }, 3100); // slightly after typing completes
+  </script>
 </body>
 </html>
