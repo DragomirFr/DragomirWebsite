@@ -1,1253 +1,563 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dragomir's IDE</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/default.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/matchesonscrollbar.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <meta charset="UTF-8" />
+  <title>Dragomir’s IDE Ultimate v5</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 
-    <style>
-        :root {
-            /* Initial Default Settings (Dark) */
-            --bg-color: #0d0d10;
-            --main-bg-color: #1a1a1f;
-            --text-color: #e4e4f0;
-            --accent-color: #5352ed;
-            --secondary-accent-color: #ffbe76; 
-            --border-color: #2e2e33;
-            --header-bg: #141417;
-            --console-bg: #101014;
-            --run-button-color: #5352ed;
-            --run-button-hover: #4746cc;
-            --error-color: #ff6b6b;
-            --success-color: #2ed573;
-            --code-font-size: 1.0rem;
-
-            /* NEW: Light Mode Overrides */
-            &[data-theme="light"] {
-                --bg-color: #f7f7f7;
-                --main-bg-color: #ffffff;
-                --text-color: #333333;
-                --accent-color: #2081c7;
-                --secondary-accent-color: #f5a623;
-                --border-color: #dddddd;
-                --header-bg: #eeeeee;
-                --console-bg: #f5f5f5;
-                --run-button-color: #2081c7;
-                --run-button-hover: #18649c;
-                --error-color: #d9534f;
-                --success-color: #5cb85c;
-            }
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
-            position: relative;
-            font-size: 16px;
-        }
-
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 10% 20%, var(--main-bg-color), transparent), 
-                        radial-gradient(circle at 90% 80%, var(--bg-color), transparent);
-            background-size: 200% 200%;
-            animation: backgroundGradient 20s ease infinite;
-            z-index: -1;
-        }
-
-        @keyframes backgroundGradient {
-            0% { background-position: 0% 0%; }
-            50% { background-position: 100% 100%; }
-            100% { background-position: 0% 0%; }
-        }
-
-        .container {
-            display: flex;
-            flex-direction: column;
-            width: 95%;
-            max-width: 1400px;
-            height: 95vh;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-            background-color: var(--main-bg-color);
-            border: 1px solid var(--border-color);
-        }
-
-        header {
-            background-color: var(--header-bg);
-            padding: 1rem 2.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .highlight {
-            color: var(--accent-color);
-        }
-
-        #header-controls {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        /* NEW: Utility buttons (Search/Settings) */
-        .utility-button {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.2s, color 0.2s;
-        }
-        .utility-button:hover {
-            opacity: 1;
-            color: var(--accent-color);
-        }
-
-        main {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            padding: 1.5rem;
-            gap: 1.5rem;
-        }
-
-        .code-and-tabs {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .tab-bar-wrapper {
-            border-bottom: 1px solid var(--border-color);
-            background-color: var(--header-bg);
-            padding: 0;
-            overflow: hidden;
-        }
-
-        .tab-bar {
-            display: flex;
-            overflow-x: auto;
-            flex-grow: 1;
-        }
-        
-        .tab-bar::-webkit-scrollbar {
-            display: none; /* Hide scrollbar in tab bar */
-        }
-        
-        .tab {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1.25rem;
-            cursor: pointer;
-            color: var(--text-color);
-            background-color: var(--header-bg);
-            border: none;
-            border-right: 1px solid var(--border-color);
-            font-family: 'Poppins', sans-serif;
-            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
-        }
-        .tab-name {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            padding-right: 5px;
-            position: relative;
-        }
-
-        .unsaved::after {
-            content: '•';
-            color: var(--secondary-accent-color);
-            font-size: 1.5rem;
-            line-height: 0;
-            position: absolute;
-            top: 50%;
-            right: 0px;
-            transform: translateY(-50%);
-            animation: blink 1.5s infinite;
-        }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .tab-rename-input {
-            background-color: #333;
-            color: var(--text-color);
-            border: 1px solid var(--accent-color);
-            padding: 0 5px;
-            border-radius: 3px;
-            font-family: 'Poppins', sans-serif;
-        }
-        .tab-close {
-            color: #ccc;
-            margin-left: 8px;
-            font-size: 0.8rem;
-            transition: color 0.2s;
-            line-height: 1;
-        }
-        .tab-close:hover {
-            color: var(--error-color);
-        }
-
-        .tab:first-of-type {
-            border-top-left-radius: 8px;
-        }
-        .tab:hover {
-            background-color: #2e3039;
-        }
-        .tab.active {
-            background-color: var(--main-bg-color);
-            color: var(--accent-color);
-            border-bottom: 3px solid var(--accent-color);
-            padding-bottom: calc(0.75rem - 1px);
-        }
-        #add-tab-button {
-            background-color: transparent;
-            border: none;
-            color: var(--accent-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-            line-height: 1;
-            transition: color 0.2s;
-            flex-shrink: 0;
-        }
-        #add-tab-button:hover {
-            color: var(--text-color);
-        }
-
-        /* SortableJS styles for drag-and-drop */
-        .sortable-chosen { opacity: 0.6; }
-        .sortable-ghost { opacity: 0.2; background: #2e3039; }
-
-        .code-area {
-            flex: 1;
-            border: 2px solid var(--border-color);
-            border-top: none;
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-            overflow: hidden;
-            position: relative; /* For the search modal positioning */
-        }
-
-        .CodeMirror {
-            height: 100%;
-            font-size: var(--code-font-size); 
-            line-height: 1.5;
-            font-family: 'JetBrains Mono', monospace; 
-        }
-
-        .CodeMirror-gutters {
-            background-color: var(--header-bg) !important;
-            border-right: 1px solid var(--border-color) !important;
-        }
-
-        .CodeMirror-linenumbers {
-            color: var(--border-color) !important;
-        }
-        
-        /* NEW: Code Mirror theme overrides for light mode */
-        [data-theme="light"] .CodeMirror { background-color: white !important; color: black !important; }
-        [data-theme="light"] .CodeMirror-gutters { background-color: var(--header-bg) !important; }
-        [data-theme="light"] .CodeMirror-linenumbers { color: #888 !important; }
-
-        .console-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background-color: var(--console-bg);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .console-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--border-color);
-            color: var(--text-color);
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            border-bottom: 1px solid #6272a4;
-            font-family: 'Poppins', sans-serif;
-        }
-        
-        #clear-output {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            cursor: pointer;
-            font-size: 1rem;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        #clear-output:hover {
-            opacity: 1;
-        }
-
-        #output {
-            flex: 1;
-            white-space: pre-wrap;
-            padding: 1rem;
-            margin: 0;
-            overflow-y: auto;
-            font-size: 0.9rem;
-            color: var(--success-color);
-            font-family: 'JetBrains Mono', monospace; 
-        }
-        
-        /* NEW: Debug/Error Output Coloring */
-        .output-debug { color: var(--secondary-accent-color); }
-        .output-error { color: var(--error-color); }
-        .output-log { color: var(--success-color); }
-
-        #run-button {
-            background-color: var(--run-button-color);
-            color: var(--text-color);
-            border: none;
-            padding: 0.75rem 2rem;
-            border-radius: 8px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-        }
-
-        #run-button:hover:not(:disabled) {
-            background-color: var(--run-button-hover);
-            transform: translateY(-2px);
-        }
-
-        #run-button:disabled {
-            background-color: #555;
-            cursor: not-allowed;
-        }
-
-        /* Status Bar Styling */
-        #status-bar {
-            padding: 0.5rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--header-bg);
-            font-size: 0.8rem;
-            border-top: 1px solid var(--border-color);
-        }
-        #file-status {
-            color: var(--secondary-accent-color);
-        }
-        #exec-time {
-            color: var(--success-color);
-            font-weight: 600;
-        }
-        
-        /* ---------------------------------- */
-        /* MODAL AND FLOATING PANEL STYLES */
-        /* ---------------------------------- */
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: none; /* Hidden by default */
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-        .modal-content {
-            background-color: var(--main-bg-color);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            width: 90%;
-            max-width: 500px;
-            color: var(--text-color);
-            font-family: 'Poppins', sans-serif;
-        }
-        .modal-content h3 {
-            margin-top: 0;
-            color: var(--accent-color);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .modal-content label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        .modal-content select, .modal-content input[type="range"], .modal-content input[type="color"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            background-color: var(--header-bg);
-            color: var(--text-color);
-            box-sizing: border-box;
-            -webkit-appearance: none;
-        }
-        .modal-content input[type="color"] {
-            height: 40px;
-            padding: 0;
-        }
-        .modal-content button {
-            background-color: var(--run-button-color);
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            float: right;
-        }
-
-        /* Global Search Panel */
-        #search-modal {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: var(--header-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 10px;
-            width: 300px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-        }
-        #search-modal input {
-            padding: 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background-color: var(--main-bg-color);
-            color: var(--text-color);
-        }
-        #search-results-list {
-            max-height: 150px;
-            overflow-y: auto;
-            border-top: 1px solid var(--border-color);
-            padding-top: 5px;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-        .search-result-item {
-            padding: 5px;
-            border-bottom: 1px dotted var(--border-color);
-            transition: background-color 0.1s;
-        }
-        .search-result-item:hover {
-            background-color: #333333;
-        }
-        .search-file-name {
-            font-weight: 600;
-            color: var(--accent-color);
-        }
-        .search-replace-buttons {
-            display: flex;
-            gap: 5px;
-        }
-        .search-replace-buttons button {
-            flex-grow: 1;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-
-    </style>
+  <style>
+    :root {
+      --accent:#3c5bfd;
+      --bg1:#0e1014;
+      --bg2:#14161b;
+      --bg3:#1c1f25;
+      --border:#1f222a;
+      --text:#e5e7eb;
+    }
+    body {
+      margin:0;
+      background:var(--bg1);
+      color:var(--text);
+      font-family:'Inter',sans-serif;
+      height:100vh;
+      overflow:hidden;
+    }
+    .monaco-editor,.monaco-editor *{font-family:'JetBrains Mono',monospace!important;}
+    #terminal::-webkit-scrollbar,#fileExplorer::-webkit-scrollbar{width:6px;}
+    #terminal::-webkit-scrollbar-thumb{background:var(--accent);border-radius:9999px;}
+    #fileExplorer::-webkit-scrollbar-thumb{background:#2d3243;border-radius:9999px;}
+    @keyframes blinkCaret{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+    .terminal-caret{display:inline-block;width:1px;background:#60a5fa;animation:blinkCaret 1s step-start infinite;}
+  </style>
 </head>
-<body data-theme="dark">
-    <div class="loading-overlay" id="loading-overlay">
-        <p>Initializing Python environment...</p>
-        <p class="loading-text">This may take a moment.</p>
+
+<body class="flex flex-col h-screen">
+  <!-- Top bar -->
+  <header class="h-12 flex items-center justify-between px-4 border-b border-[var(--border)] bg-[var(--bg2)]">
+    <div class="flex items-center gap-2">
+      <span class="text-[var(--accent)] font-semibold text-sm">Dragomir’s IDE</span>
+      <span id="status" class="text-xs text-slate-400">Ready</span>
     </div>
+    <div class="flex items-center gap-2">
+      <button id="runBtn" class="px-3 py-1 rounded bg-[var(--accent)] text-xs font-semibold">Run</button>
+      <button id="saveBtn" class="px-3 py-1 rounded bg-[var(--accent)] text-xs font-semibold">Save</button>
+      <button id="openSettings" class="px-3 py-1 rounded bg-[var(--accent)] text-xs font-semibold">Settings</button>
+    </div>
+  </header>
 
-    <div class="container">
-        <header>
-            <h1><span class="highlight">Dragomir's</span> Editor</h1>
-            <div id="header-controls">
-                <button id="search-button" class="utility-button" title="Global Search (Ctrl/Cmd + Shift + F)">🔍</button>
-                <button id="settings-button" class="utility-button" title="Settings">⚙️</button>
-                <button id="run-button" disabled>Run Code</button>
-            </div>
-        </header>
-
-        <main>
-            <div class="code-and-tabs">
-                <div class="tab-bar-wrapper">
-                    <div class="tab-bar" id="tab-bar">
-                        </div>
-                    <button id="add-tab-button" style="padding: 0.75rem 1.25rem;">+</button>
-                </div>
-                
-                <div class="code-area">
-                    <div id="editor"></div>
-                    
-                    <div id="search-modal">
-                        <input type="text" id="search-input" placeholder="Search across all files" autofocus>
-                        <input type="text" id="replace-input" placeholder="Replace with (optional)">
-                        <div id="search-replace-controls" class="search-replace-buttons">
-                            <button id="find-all-button" class="search-button">Find All</button>
-                            <button id="replace-all-button" disabled>Replace All</button>
-                        </div>
-                        <p id="search-summary" style="margin: 0; font-size: 0.8rem;"></p>
-                        <div id="search-results-list"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="console-area">
-                <div class="console-header">
-                    Output
-                    <button id="clear-output" title="Clear Output">🗑️</button>
-                </div>
-                <div id="output"></div>
-            </div>
-        </main>
-        
-        <div id="status-bar">
-            <span id="file-status">Ready.</span>
-            <span id="exec-time"></span>
+  <!-- Layout -->
+  <div class="flex flex-1 overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-56 border-r border-[var(--border)] bg-[var(--bg2)] flex flex-col">
+      <div class="px-3 py-2 text-xs uppercase tracking-wide text-slate-400 border-b border-[var(--border)] flex items-center justify-between">
+        <span>Explorer</span>
+        <div class="flex items-center">
+          <button id="newFileBtn" class="flex items-center gap-1 px-2 py-0.5 text-xs rounded hover:bg-[var(--bg3)] text-slate-200">
+            <span class="text-[var(--accent)]">🞧</span> New
+          </button>
+          <div class="h-4 w-px bg-[var(--border)] mx-2"></div>
+          <button id="uploadFileBtn" class="flex items-center gap-1 px-2 py-0.5 text-xs rounded hover:bg-[var(--bg3)] text-slate-200">
+            <span class="text-[var(--accent)]">⭳</span> Import
+          </button>
+          <input id="fileInput" type="file" accept=".py,.txt" class="hidden" />
         </div>
-    </div>
-    
-    <div id="settings-overlay" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Editor Settings</h3>
+      </div>
+      <div id="fileExplorer" class="flex-1 overflow-y-auto text-sm flex flex-col"></div>
+    </aside>
+    <!-- Editor + Terminal -->
+    <div class="flex-1 flex flex-col">
+      <!-- Tabs -->
+      <div id="tabs" class="h-9 flex items-center gap-1 px-2 border-b border-[var(--border)] bg-[var(--bg2)]"></div>
 
-            <label for="theme-select">Theme:</label>
-            <select id="theme-select">
-                <option value="dark">Dark (Dracula)</option>
-                <option value="light">Light (Default)</option>
-            </select>
+      <!-- Editor -->
+      <div id="editor" class="flex-1 min-h-0"></div>
 
-            <label for="accent-color-picker">Accent Color:</label>
-            <input type="color" id="accent-color-picker" value="#5352ed">
-            
-            <label for="font-size-slider">Code Font Size: <span id="font-size-value">16px</span></label>
-            <input type="range" id="font-size-slider" min="12" max="24" value="16">
-
-            <button id="close-settings">Close</button>
+      <!-- Terminal -->
+      <div id="terminalContainer" class="h-44 border-t border-[var(--border)] bg-[var(--bg2)] flex flex-col">
+        <div id="terminalHeader"
+          class="h-7 flex items-center justify-between px-3 text-xs text-slate-400 border-b border-[var(--border)] cursor-row-resize select-none">
+          <span>Terminal</span>
+          <div class="flex gap-2">
+            <button id="termNew" class="hover:text-white">New session</button>
+            <button id="termClear" class="hover:text-white">Clear</button>
+          </div>
         </div>
+        <div id="terminal" class="flex-1 text-xs px-3 py-2 overflow-y-auto whitespace-pre-wrap"></div>
+      </div>
     </div>
-
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/python-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/indent-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/selection/active-line.min.js"></script>
-    
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const outputConsole = document.getElementById('output');
-            const runButton = document.getElementById('run-button');
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const tabBar = document.getElementById('tab-bar');
-            const editorDiv = document.getElementById('editor');
-            const fileStatus = document.getElementById('file-status');
-            const execTime = document.getElementById('exec-time');
-            const body = document.body;
-
-            const STORAGE_KEY = 'pyeditor_files_v4';
-            const SETTINGS_KEY = 'pyeditor_settings_v1';
-            
-            let files = {};
-            let fileOrder = [];
-            let currentFileId = 'main';
-            let editorInstance = null;
-            let pyodide = null;
-            let settings = {};
-
-            // Default CodeMirror theme and font
-            let cmTheme = 'dracula';
-            let cmFontSize = 16;
-            let cmAccentColor = '#5352ed';
-
-            // --- 0. SETTINGS & THEMING ---
-
-            function loadSettings() {
-                const storedSettings = localStorage.getItem(SETTINGS_KEY);
-                settings = storedSettings ? JSON.parse(storedSettings) : {
-                    theme: 'dark',
-                    accent: '#5352ed',
-                    fontSize: 16
-                };
-
-                cmTheme = settings.theme === 'light' ? 'default' : 'dracula';
-                cmFontSize = settings.fontSize;
-                cmAccentColor = settings.accent;
-
-                applySettings();
-            }
-
-            function saveSettings() {
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-            }
-
-            function applySettings() {
-                // Apply theme to the body (for custom CSS)
-                body.setAttribute('data-theme', settings.theme);
-                
-                // Apply accent color
-                document.documentElement.style.setProperty('--accent-color', settings.accent);
-                document.documentElement.style.setProperty('--run-button-color', settings.accent);
-                
-                // Apply font size
-                document.documentElement.style.setProperty('--code-font-size', `${settings.fontSize / 16}rem`);
-                
-                // Update CodeMirror if initialized
-                if (editorInstance) {
-                    editorInstance.setOption('theme', cmTheme);
-                }
-            }
-
-            // --- 1. FILE & LOCAL STORAGE PERSISTENCE ---
-
-            function saveFiles() {
-                if (editorInstance) {
-                    // Save content and folding state (CodeMirror persistence)
-                    files[currentFileId].code = editorInstance.getValue();
-                    files[currentFileId].unsaved = false;
-                    files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
-                    
-                    renderTabs(); 
-                }
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({ files, currentFileId, fileOrder }));
-                fileStatus.textContent = 'Auto-saved.';
-                setTimeout(() => fileStatus.textContent = 'Ready.', 1000);
-            }
-
-            function loadFiles() {
-                const storedData = localStorage.getItem(STORAGE_KEY);
-                if (storedData) {
-                    const data = JSON.parse(storedData);
-                    files = data.files;
-                    currentFileId = data.currentFileId;
-                    fileOrder = data.fileOrder || Object.keys(files);
-                    
-                    fileOrder = fileOrder.filter(id => files[id]);
-                    Object.keys(files).forEach(id => {
-                        if (!fileOrder.includes(id)) {
-                            fileOrder.push(id);
-                        }
-                        if (files[id].unsaved === undefined) files[id].unsaved = false;
-                        if (files[id].fold === undefined) files[id].fold = []; // Initialize fold state
-                    });
-
-                } else {
-                    const mainId = 'main';
-                    files = {
-                        [mainId]: { name: 'main.py', code: "print(''s World!')\n", unsaved: false, fold: [] },
-                    };
-                    currentFileId = mainId;
-                    fileOrder = [mainId];
-                }
-            }
-            
-            // --- 2. EDITOR INITIALIZATION & TAB RENDERING ---
-
-            function initializeEditor(fileId) {
-                const file = files[fileId];
-                
-                if (editorInstance) {
-                    // Existing instance: update value, theme, and restore folding
-                    editorInstance.setValue(file.code);
-                    editorInstance.setOption('theme', cmTheme);
-                    editorInstance.focus();
-                    
-                    // Clear existing folds and apply new ones
-                    editorInstance.getAllMarks().forEach(m => m.clear());
-                    file.fold.forEach(range => {
-                        if (range.from && range.to) {
-                             editorInstance.foldCode(CodeMirror.Pos(range.from.line, range.from.ch));
-                        }
-                    });
-
-                } else {
-                    // New instance: create and configure
-                    editorInstance = CodeMirror(editorDiv, {
-                        value: file.code,
-                        mode: 'python',
-                        theme: cmTheme,
-                        lineNumbers: true,
-                        indentUnit: 4,
-                        tabSize: 4,
-                        indentWithTabs: true,
-                        autofocus: true,
-                        lineWrapping: true,
-                        autoCloseBrackets: true,
-                        autoCloseTags: true,
-                        lineWiseCopyCut: true,
-                        foldGutter: true,
-                        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-                        foldOptions: {
-                            widget: "...",
-                            rangeFinder: CodeMirror.fold.indent,
-                        },
-                        styleActiveLine: true,
-                        extraKeys: { 
-                            "Ctrl-Space": "autocomplete",
-                            "Tab": function(cm) {
-                                if (cm.somethingSelected()) cm.indentSelection("add");
-                                else if (cm.getOption("indentWithTabs")) cm.replaceSelection("\t", "end", "+input");
-                                else cm.replaceSelection(Array(cm.getOption("indentUnit") + 1).join(" "), "end", "+input");
-                            },
-                            // NEW: Debug Helper Shortcut (Ctrl/Cmd + D)
-                            "Cmd-D": insertDebugPrint,
-                            "Ctrl-D": insertDebugPrint,
-                        },
-                        hintOptions: { completeSingle: false, container: document.body }
-                    });
-                    
-                    // Apply initial folding state
-                    file.fold.forEach(range => {
-                        if (range.from && range.to) {
-                             editorInstance.foldCode(CodeMirror.Pos(range.from.line, range.from.ch));
-                        }
-                    });
-
-                    // Attach change listener *once*
-                    editorInstance.on('change', () => {
-                        if (files[currentFileId].unsaved === false) {
-                            files[currentFileId].unsaved = true;
-                            renderTabs();
-                        }
-                        // Throttle auto-save to only run after a brief pause
-                        if (this.saveTimer) clearTimeout(this.saveTimer);
-                        this.saveTimer = setTimeout(saveFiles, 1000);
-                    });
-                }
-            }
-
-            function renderTabs() {
-                tabBar.innerHTML = '';
-                
-                fileOrder.forEach(fileId => {
-                    const file = files[fileId];
-                    if (!file) return;
-
-                    const tab = document.createElement('button');
-                    tab.classList.add('tab');
-                    tab.setAttribute('data-file-id', fileId);
-                    
-                    const tabNameSpan = document.createElement('span');
-                    tabNameSpan.classList.add('tab-name');
-                    tabNameSpan.textContent = file.name;
-                    tabNameSpan.title = file.name;
-
-                    if (file.unsaved) {
-                        tabNameSpan.classList.add('unsaved');
-                    }
-                    
-                    tab.appendChild(tabNameSpan);
-
-                    if (fileId !== 'main') {
-                        const closeButton = document.createElement('span');
-                        closeButton.classList.add('tab-close');
-                        closeButton.innerHTML = '×';
-                        closeButton.title = 'Delete File';
-                        closeButton.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            deleteFile(fileId);
-                        });
-                        tab.appendChild(closeButton);
-                    }
-
-                    if (fileId === currentFileId) {
-                        tab.classList.add('active');
-                    }
-                    tabBar.appendChild(tab);
-                });
-                
-                applySortable();
-            }
-            
-            function applySortable() {
-                // Initialize SortableJS for drag-and-drop
-                Sortable.create(tabBar, {
-                    animation: 250,
-                    draggable: '.tab',
-                    filter: '#add-tab-button',
-                    onUpdate: function (evt) {
-                        const newOrder = Array.from(tabBar.children)
-                                              .map(el => el.getAttribute('data-file-id'))
-                                              .filter(id => id);
-                        
-                        fileOrder = newOrder;
-                        saveFiles();
-                    }
-                });
-            }
-
-
-            // --- 3. FILE MANAGEMENT & TAB SWITCHING ---
-
-            tabBar.addEventListener('click', (e) => {
-                const target = e.target.closest('.tab');
-                if (target && !e.target.classList.contains('tab-close')) {
-                    const newFileId = target.getAttribute('data-file-id');
-                    
-                    if (newFileId === currentFileId) return;
-
-                    // 1. Save content and folding state of the file we are leaving.
-                    if (editorInstance) {
-                        files[currentFileId].code = editorInstance.getValue();
-                        files[currentFileId].unsaved = false;
-                        files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
-                    }
-
-                    // 2. Update the state and UI
-                    currentFileId = newFileId;
-                    renderTabs();
-                    
-                    // 3. Load the content for the NEW file.
-                    initializeEditor(currentFileId); 
-                    saveFiles(); // Save global state
-                }
-            });
-            
-            const addTabButton = document.getElementById('add-tab-button');
-            let fileCounter = 1;
-            addTabButton.addEventListener('click', () => {
-                const newFileId = `file${Date.now()}`;
-                const newFileName = `dragomir${fileCounter++}.py`;
-
-                if (editorInstance) {
-                    files[currentFileId].code = editorInstance.getValue();
-                    files[currentFileId].unsaved = false;
-                    files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
-                }
-
-                files[newFileId] = { name: newFileName, code: `print("Dragomirs World!")`, unsaved: true, fold: [] };
-
-                currentFileId = newFileId;
-                fileOrder.push(newFileId);
-                renderTabs();
-                initializeEditor(currentFileId);
-                saveFiles();
-            });
-
-            function deleteFile(fileIdToDelete) {
-                if (!confirm(`Are you sure you want to delete ${files[fileIdToDelete].name}?`)) return;
-
-                delete files[fileIdToDelete];
-                
-                const index = fileOrder.indexOf(fileIdToDelete);
-                if (index > -1) {
-                    fileOrder.splice(index, 1);
-                }
-                
-                if (fileIdToDelete === currentFileId) {
-                    currentFileId = fileOrder[0];
-                    initializeEditor(currentFileId);
-                }
-
-                renderTabs();
-                saveFiles();
-            }
-            
-            // --- 4. DEBUGGING HELPER (Ctrl/Cmd + D) ---
-            function insertDebugPrint(cm) {
-                const selection = cm.getSelection();
-                const cursor = cm.getCursor();
-                const line = cursor.line;
-                
-                const variable = selection.trim() || cm.getLine(line).trim();
-                if (!variable) return;
-
-                const printStatement = `print(f"[DEBUG] ${variable}: {${variable}}")`;
-                
-                // If a variable is selected, insert the print statement on the next line.
-                cm.replaceSelection(printStatement, "start");
-                cm.replaceRange("\n", {line: line + 1, ch: 0});
-                
-                // Move cursor to the new line
-                cm.setCursor(line + 1, printStatement.length);
-            }
-
-            // --- 5. GLOBAL SEARCH AND REPLACE ---
-            const searchModal = document.getElementById('search-modal');
-            const searchInput = document.getElementById('search-input');
-            const replaceInput = document.getElementById('replace-input');
-            const findButton = document.getElementById('find-all-button');
-            const replaceButton = document.getElementById('replace-all-button');
-            const resultsList = document.getElementById('search-results-list');
-            const searchSummary = document.getElementById('search-summary');
-            
-            let searchResults = [];
-
-            document.getElementById('search-button').addEventListener('click', () => {
-                searchModal.style.display = searchModal.style.display === 'flex' ? 'none' : 'flex';
-                if (searchModal.style.display === 'flex') {
-                    searchInput.focus();
-                }
-            });
-
-            // Global Search Shortcut
-            document.addEventListener('keydown', (e) => {
-                if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'F') {
-                    e.preventDefault();
-                    searchModal.style.display = searchModal.style.display === 'flex' ? 'none' : 'flex';
-                    if (searchModal.style.display === 'flex') {
-                        searchInput.focus();
-                    }
-                }
-                if (searchModal.style.display === 'flex' && e.key === 'Escape') {
-                    searchModal.style.display = 'none';
-                }
-            });
-
-            findButton.addEventListener('click', () => {
-                const term = searchInput.value;
-                if (!term) return;
-
-                searchResults = [];
-                resultsList.innerHTML = '';
-                replaceButton.disabled = true;
-
-                // 1. Iterate through all files
-                for (const fileId of fileOrder) {
-                    const file = files[fileId];
-                    const regex = new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
-                    let match;
-                    let fileResultsCount = 0;
-
-                    while ((match = regex.exec(file.code)) !== null) {
-                        const lineIndex = file.code.substring(0, match.index).split('\n').length - 1;
-                        const lineContent = file.code.split('\n')[lineIndex].trim();
-
-                        searchResults.push({ fileId, fileName: file.name, line: lineIndex + 1, matchIndex: match.index, lineContent });
-                        
-                        // Display in results list
-                        const item = document.createElement('div');
-                        item.classList.add('search-result-item');
-                        item.innerHTML = `<span class="search-file-name">${file.name} (L${lineIndex + 1}):</span> ${lineContent}`;
-                        item.setAttribute('data-file-id', fileId);
-                        item.setAttribute('data-line', lineIndex + 1);
-
-                        // Click to switch file and navigate
-                        item.addEventListener('click', (e) => {
-                            if (fileId !== currentFileId) {
-                                // Save current file before switching
-                                files[currentFileId].code = editorInstance.getValue();
-                                files[currentFileId].unsaved = false;
-                                files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
-                                currentFileId = fileId;
-                                renderTabs();
-                                initializeEditor(currentFileId);
-                            }
-                            
-                            // Navigate to line
-                            const lineNumber = parseInt(e.currentTarget.getAttribute('data-line')) - 1;
-                            editorInstance.setCursor(lineNumber, 0);
-                            editorInstance.scrollIntoView({line: lineNumber, ch: 0}, 50);
-                            editorInstance.focus();
-                        });
-
-                        resultsList.appendChild(item);
-                        fileResultsCount++;
-                    }
-                }
-
-                searchSummary.textContent = `${searchResults.length} match(es) found in ${Object.keys(files).length} files.`;
-                if (searchResults.length > 0) {
-                    replaceButton.disabled = !replaceInput.value;
-                }
-            });
-
-            replaceInput.addEventListener('input', () => {
-                replaceButton.disabled = searchResults.length === 0 || !replaceInput.value;
-            });
-
-            replaceButton.addEventListener('click', () => {
-                if (!confirm(`Are you sure you want to replace ${searchResults.length} instances of "${searchInput.value}" with "${replaceInput.value}"?`)) {
-                    return;
-                }
-                
-                const term = searchInput.value;
-                const replacement = replaceInput.value;
-                const filesToUpdate = new Set();
-
-                // 1. Perform replacement in the data model
-                for (const fileId in files) {
-                    const file = files[fileId];
-                    const regex = new RegExp(term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
-                    
-                    if (file.code.match(regex)) {
-                        file.code = file.code.replace(regex, replacement);
-                        file.unsaved = true;
-                        filesToUpdate.add(fileId);
-                    }
-                }
-
-                // 2. Update UI and save
-                if (filesToUpdate.has(currentFileId)) {
-                    initializeEditor(currentFileId); // Re-render active editor
-                }
-                renderTabs();
-                saveFiles();
-                
-                // Re-run search to update summary
-                searchSummary.textContent = `Replacement complete. ${searchResults.length} instances replaced.`;
-                resultsList.innerHTML = '';
-                searchResults = [];
-                replaceButton.disabled = true;
-            });
-            
-            // --- 6. SETTINGS MODAL LOGIC ---
-            const settingsOverlay = document.getElementById('settings-overlay');
-            const themeSelect = document.getElementById('theme-select');
-            const accentPicker = document.getElementById('accent-color-picker');
-            const fontSizeSlider = document.getElementById('font-size-slider');
-            const fontSizeValue = document.getElementById('font-size-value');
-
-            document.getElementById('settings-button').addEventListener('click', () => {
-                // Set modal values to current settings
-                themeSelect.value = settings.theme;
-                accentPicker.value = settings.accent;
-                fontSizeSlider.value = settings.fontSize;
-                fontSizeValue.textContent = `${settings.fontSize}px`;
-                settingsOverlay.style.display = 'flex';
-            });
-
-            document.getElementById('close-settings').addEventListener('click', () => {
-                settingsOverlay.style.display = 'none';
-            });
-            
-            // Close modal on click outside
-            settingsOverlay.addEventListener('click', (e) => {
-                if (e.target.id === 'settings-overlay') {
-                    settingsOverlay.style.display = 'none';
-                }
-            });
-            
-            // Event Handlers for changes
-            themeSelect.addEventListener('change', () => {
-                settings.theme = themeSelect.value;
-                cmTheme = settings.theme === 'light' ? 'default' : 'dracula';
-                applySettings();
-                saveSettings();
-            });
-
-            accentPicker.addEventListener('change', () => {
-                settings.accent = accentPicker.value;
-                applySettings();
-                saveSettings();
-            });
-
-            fontSizeSlider.addEventListener('input', () => {
-                settings.fontSize = parseInt(fontSizeSlider.value);
-                cmFontSize = settings.fontSize;
-                fontSizeValue.textContent = `${settings.fontSize}px`;
-                applySettings();
-                saveSettings();
-            });
-
-
-            // --- 7. PYODIDE EXECUTION LOGIC (Updated for custom print) ---
-
-            document.getElementById('clear-output').addEventListener('click', () => {
-                outputConsole.innerHTML = '';
-                execTime.textContent = '';
-            });
-            
-            // Custom print function to handle colored output
-            function customPrint(message) {
-                const p = document.createElement('p');
-                p.style.margin = '0';
-                p.style.padding = '0';
-                p.style.whiteSpace = 'pre-wrap';
-                p.style.fontFamily = 'JetBrains Mono, monospace';
-
-                if (message.startsWith('[DEBUG]')) {
-                    p.classList.add('output-debug');
-                } else if (message.startsWith('Error:')) {
-                    p.classList.add('output-error');
-                } else {
-                    p.classList.add('output-log');
-                }
-                
-                p.textContent = message;
-                outputConsole.appendChild(p);
-                outputConsole.scrollTop = outputConsole.scrollHeight; // Auto-scroll
-            }
-
-
-            runButton.addEventListener('click', async () => {
-                if (editorInstance) {
-                    files[currentFileId].code = editorInstance.getValue();
-                    files[currentFileId].unsaved = false;
-                    files[currentFileId].fold = editorInstance.getAllMarks().map(m => m.find());
-                    renderTabs();
-                }
-
-                const currentFileName = files[currentFileId].name;
-                outputConsole.innerHTML = ''; 
-                runButton.disabled = true;
-                fileStatus.textContent = 'Running...';
-                execTime.textContent = '';
-                
-                // 1. Write ALL files to the Pyodide virtual file system (VFS)
-                for (const fileId of fileOrder) {
-                    const file = files[fileId];
-                    if (file) {
-                        pyodide.FS.writeFile(`/${file.name}`, file.code, { encoding: "utf8" });
-                    }
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 10));
-
-                // Route stdout to our custom print function
-                pyodide.setStdout({ batched: (message) => customPrint(message) });
-
-                // 2. Run the code from the active file and time it
-                const startTime = performance.now();
-                try {
-                    const codeToRun = pyodide.FS.readFile(`/${currentFileName}`, { encoding: "utf8" });
-                    
-                    await pyodide.runPythonAsync(codeToRun);
-                    
-                } catch (err) {
-                    customPrint(`Error: ${err}`);
-                } finally {
-                    const endTime = performance.now();
-                    runButton.disabled = false;
-                    fileStatus.textContent = 'Ready.';
-                    execTime.textContent = `Executed in ${(endTime - startTime).toFixed(2)} ms`;
-                }
-            });
-
-            // --- 8. FINAL INITIALIZATION ---
-            
-            loadSettings(); // Load theme/font first
-            loadFiles();
-            renderTabs();
-            
-            try {
-                fileStatus.textContent = 'Loading interpreter...';
-                pyodide = await loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
-                });
-                loadingOverlay.style.display = 'none';
-                runButton.disabled = false;
-                initializeEditor(currentFileId);
-                fileStatus.textContent = 'Ready.';
-            } catch (error) {
-                loadingOverlay.innerHTML = `<p style="color:var(--error-color);">Failed to load Python environment. Check your connection.</p>`;
-                console.error(error);
-            }
+  </div>
+
+  <!-- Status bar -->
+  <footer id="statusBar"
+    class="h-5 px-3 text-[10px] bg-[var(--bg2)] border-t border-[var(--border)] flex items-center text-slate-400">
+    Ready
+  </footer>
+
+  <!-- New File Modal -->
+  <div id="newFileModal"
+    class="hidden fixed inset-0 z-40 items-center justify-center bg-[rgba(0,0,0,0.35)]">
+    <div class="bg-[var(--bg2)] border border-[var(--border)] rounded-lg w-80 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold">Create new file</h2>
+        <button id="closeNewFile" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+      <input id="newFileName"
+        class="w-full mb-3 bg-[var(--bg1)] border border-[var(--border)] rounded px-2 py-1 text-xs"
+        placeholder="my_script.py" />
+      <div class="flex justify-end">
+        <button id="createFile"
+          class="px-3 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal"
+    class="hidden fixed inset-0 z-40 items-center justify-center bg-[rgba(0,0,0,0.35)]">
+    <div class="bg-[var(--bg2)] border border-[var(--border)] rounded-lg w-80 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold">Settings</h2>
+        <button id="closeSettings" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <label class="block text-xs mb-1">Backend URL</label>
+      <input id="backendUrlInput"
+        class="w-full mb-3 bg-[var(--bg1)] border border-[var(--border)] rounded px-2 py-1 text-xs" />
+
+      <label class="block text-xs mb-1">Editor font size</label>
+      <input id="fontSizeInput" type="number" min="10" max="24"
+        class="w-20 mb-3 bg-[var(--bg1)] border border-[var(--border)] rounded px-2 py-1 text-xs" />
+
+      <label class="flex items-center gap-2 text-xs mb-3">
+        <input id="minimapToggle" type="checkbox" class="accent-[var(--accent)]">
+        Show minimap
+      </label>
+
+      <!-- Libraries Tab -->
+      <div id="libSection" class="border-t border-[var(--border)] mt-3 pt-3">
+        <h3 class="text-xs font-semibold mb-2">Python Libraries</h3>
+        <div id="libraryList" class="max-h-32 overflow-y-auto text-xs mb-2"></div>
+        <div class="flex gap-2">
+          <input id="newLibInput" placeholder="Enter library name"
+            class="flex-1 bg-[var(--bg1)] border border-[var(--border)] rounded px-2 py-1 text-xs" />
+          <button id="installLib"
+            class="px-2 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Install</button>
+        </div>
+      </div>
+
+      <div class="flex justify-end mt-3">
+        <button id="saveSettings"
+          class="px-3 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consent -->
+  <div id="consentBar"
+    class="hidden fixed bottom-2 left-1/2 -translate-x-1/2 z-50 bg-[var(--bg3)] border border-[var(--border)] rounded-md px-4 py-3 text-xs flex items-center gap-4 shadow-lg">
+    <span>This site uses local storage. By continuing, you agree to the
+      <a href="https://dragomirz.xyz/tos" target="_blank" rel="noreferrer"
+        class="text-[var(--accent)] underline">Terms of Service</a>.
+    </span>
+    <button id="acceptConsent"
+      class="px-3 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Accept</button>
+  </div>
+
+  <!-- Core JavaScript -->
+  <script>
+    const STORAGE_KEY = "dragomir_ide_v5";
+    const CONSENT_KEY = "dragomir_consent_v1";
+    let state = {
+      files: { "main.py": "a=int(input('age: '))\\nprint(f'You are {a} years old!')" },
+      open: ["main.py"],
+      active: "main.py",
+      settings: { backendUrl: "http://127.0.0.1:5000", fontSize: 15, minimap: true }
+    };
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try { state = JSON.parse(saved); } catch { }
+    }
+        const explorer = document.getElementById("fileExplorer");
+    const consentBar = document.getElementById("consentBar");
+    if (!localStorage.getItem(CONSENT_KEY)) consentBar.classList.remove("hidden");
+    document.getElementById("acceptConsent").onclick = () => {
+      localStorage.setItem(CONSENT_KEY, "1");
+      consentBar.classList.add("hidden");
+    };
+    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+    // ===== MONACO EDITOR =====
+    let editor;
+require.config({ paths: { vs: "https://unpkg.com/monaco-editor@0.44.0/min/vs" } });
+require(["vs/editor/editor.main"], function () {
+  monaco.editor.defineTheme("dragomir-dark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editor.background": "#0e1014",
+      "editor.foreground": "#e5e7eb",
+      "editorCursor.foreground": "#3c5bfd",
+      "editorCursor.background": "#0e1014",
+      "editorCursor.border": "#0e1014",
+      "editorLineHighlightBackground": "#16181d",
+      "editorLineNumber.foreground": "#4b5563",
+      "editorLineNumber.activeForeground": "#93c5fd",
+      "editor.selectionBackground": "#3c5bfd40",
+      "editor.inactiveSelectionBackground": "#3c5bfd20"
+    }
+  });
+
+  editor = monaco.editor.create(document.getElementById("editor"), {
+    value: state.files[state.active],
+    language: "python",
+    theme: "dragomir-dark",
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: state.settings.fontSize,
+    fontLigatures: true,
+    cursorStyle: "line-thin",
+    cursorBlinking: "blink",
+    letterSpacing: 0.3,
+    minimap: { enabled: state.settings.minimap },
+    automaticLayout: true
+  });
+
+  renderExplorer();
+  renderTabs();
+});
+
+
+    // ===== TERMINAL =====
+    const terminal = document.getElementById("terminal");
+    const statusEl = document.getElementById("status");
+    const statusBar = document.getElementById("statusBar");
+    const tabs = document.getElementById("tabs");
+    let activeInputHandler = null, currentSessionId = null;
+
+    function termWrite(text = "", isErr = false) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      div.style.color = isErr ? "#f87171" : "#d1d5db";
+      terminal.appendChild(div);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+    function setStatus(msg, tone = "neutral") {
+      statusEl.textContent = msg;
+      statusBar.textContent = msg;
+      statusBar.style.color =
+        tone === "running" ? "#93c5fd" :
+        tone === "error"   ? "#fca5a5" : "#9ca3af";
+    }
+
+    // ===== FILE EXPLORER + FOLDERS =====
+    function renderExplorer() {
+      explorer.innerHTML = "";
+      const tree = {};
+      Object.keys(state.files).forEach(path => {
+        const parts = path.split("/");
+        let node = tree;
+        parts.forEach((p, i) => {
+          if (!node[p]) node[p] = (i === parts.length - 1) ? null : {};
+          node = node[p] || node;
         });
-    </script>
+      });
 
-   <!-- Cookies & ToS Banner -->
-<div id="consent-banner" style="
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--main-bg-color);
-    color: var(--text-color);
-    padding: 15px 20px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-    display: none;
-    z-index: 9999; /* higher than interpreter overlay */
-    max-width: 90%;
-    font-size: 0.9rem;
-    text-align: center;
-">
-    <p style="margin: 0 0 10px 0;">
-        We use cookies to improve your experience. By continuing, you agree to our 
-        <a href="/tos.html" style="color: var(--accent-color); text-decoration: underline;">Terms of Service</a> 
-        and <a href="/cookies.html" style="color: var(--accent-color); text-decoration: underline;">Cookies Policy</a>.
-    </p>
-    <button id="accept-consent" style="
-        background: var(--run-button-color);
-        border: none;
-        color: white;
-        padding: 8px 15px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 600;
-    ">Accept</button>
-</div>
+      function draw(obj, parent, prefix = "") {
+        Object.entries(obj).forEach(([key, val]) => {
+          if (val === null) {
+            const row = document.createElement("div");
+            row.className =
+              "flex items-center justify-between pl-6 pr-3 py-1.5 text-xs hover:bg-[var(--bg3)] cursor-pointer " +
+              (prefix + key === state.active ? "bg-[var(--bg3)]" : "");
+            row.textContent = key;
+            row.onclick = () => openFile(prefix + key);
+            parent.appendChild(row);
+          } else {
+            const folder = document.createElement("details");
+            folder.open = true;
+            const summary = document.createElement("summary");
+            summary.textContent = key;
+            summary.className =
+              "cursor-pointer px-2 py-1 text-xs text-slate-300 hover:text-white";
+            folder.appendChild(summary);
+            draw(val, folder, prefix + key + "/");
+            parent.appendChild(folder);
+          }
+        });
+      }
+      draw(tree, explorer);
+      saveState();
+    }
 
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const banner = document.getElementById("consent-banner");
-        const acceptBtn = document.getElementById("accept-consent");
-        const CONSENT_KEY = "userConsentGiven";
+    // ===== TABS =====
+    function renderTabs() {
+      tabs.innerHTML = "";
+      state.open.forEach(name => {
+        const tab = document.createElement("div");
+        tab.className =
+          "flex items-center gap-2 px-3 h-9 text-xs border-r border-[var(--border)] cursor-pointer " +
+          (name === state.active ? "bg-[var(--bg3)]" : "bg-[var(--bg2)]");
+        const span = document.createElement("span");
+        span.textContent = name;
+        const close = document.createElement("button");
+        close.textContent = "×";
+        close.className = "text-slate-400 hover:text-white";
+        close.onclick = e => { e.stopPropagation(); deleteFile(name); };
+        tab.onclick = () => openFile(name);
+        tab.appendChild(span);
+        if (name !== "main.py") tab.appendChild(close);
+        tabs.appendChild(tab);
+      });
+    }
 
-        // Only show after interpreter overlay disappears
-        const loadingOverlay = document.getElementById("loading-overlay");
+    function openFile(name) {
+      if (editor && state.active) state.files[state.active] = editor.getValue();
+      state.active = name;
+      if (!state.open.includes(name)) state.open.push(name);
+      editor.setValue(state.files[name] || "");
+      renderTabs();
+      renderExplorer();
+      saveState();
+    }
 
-        function tryShowBanner() {
-            if (!localStorage.getItem(CONSENT_KEY) && loadingOverlay.style.display === "none") {
-                banner.style.display = "block";
-            }
+    function deleteFile(name) {
+      if (name === "main.py") return;
+      delete state.files[name];
+      const idx = state.open.indexOf(name);
+      if (idx !== -1) state.open.splice(idx, 1);
+      if (state.active === name) {
+        state.active = state.open[state.open.length - 1] || "main.py";
+        editor.setValue(state.files[state.active] || "");
+      }
+      renderTabs();
+      renderExplorer();
+      saveState();
+    }
+        // ===== RUN CODE =====
+    document.getElementById("runBtn").onclick = () => {
+      state.files[state.active] = editor.getValue();
+      saveState();
+      currentSessionId = null;
+      runOnServer();
+    };
+
+    async function runOnServer(userInput = null) {
+      const backend = state.settings.backendUrl;
+      const payload = userInput
+        ? { session_id: currentSessionId, user_input: userInput }
+        : { code: editor.getValue() };
+
+      if (!userInput) termWrite("────── New Session ──────");
+      setStatus("Running…", "running");
+
+      try {
+        const res = await fetch(backend + "/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.session_id) currentSessionId = data.session_id;
+
+        if (data.needs_input || (data.stdout && data.stdout.includes("__REQUEST_INPUT__MARKER__"))) {
+          let promptText = data.prompt || "";
+          if (data.stdout && data.stdout.includes("__REQUEST_INPUT__MARKER__")) {
+            const [before, after] = data.stdout.split("__REQUEST_INPUT__MARKER__");
+            if (before.trim()) termWrite(before.trim());
+            promptText = after || promptText;
+          } else if (data.stdout && data.stdout.trim()) {
+            termWrite(data.stdout.trim());
+          }
+          termPromptInput(promptText, v => runOnServer(v));
+          setStatus("Waiting for input…", "running");
+          return;
         }
 
-        // Try to show when DOM ready
-        tryShowBanner();
+        if (data.stdout && data.stdout.trim()) termWrite(data.stdout.trim());
+        if (data.stderr && data.stderr.trim()) termWrite(data.stderr.trim(), true);
+        setStatus("Ready ✓");
+      } catch (err) {
+        termWrite("Network error: " + err.message, true);
+        setStatus("Error", "error");
+      }
+    }
 
-        // Also observe overlay hiding (interpreter loaded)
-        const observer = new MutationObserver(() => tryShowBanner());
-        observer.observe(loadingOverlay, { attributes: true, attributeFilter: ["style"] });
+    // ===== INPUT HANDLER =====
+    function termPromptInput(promptText, callback) {
+      if (activeInputHandler) {
+        window.removeEventListener("keydown", activeInputHandler);
+        activeInputHandler = null;
+      }
+      if (promptText && promptText.trim() !== "") {
+        const label = document.createElement("span");
+        label.textContent = promptText;
+        label.style.color = "#60a5fa";
+        terminal.appendChild(label);
+      }
+      const inputSpan = document.createElement("span");
+      inputSpan.style.color = "#60a5fa";
+      let value = "";
+      const caret = document.createElement("span");
+      caret.textContent = "│";
+      caret.className = "terminal-caret";
+      inputSpan.appendChild(caret);
+      terminal.appendChild(inputSpan);
+      terminal.scrollTop = terminal.scrollHeight;
 
-        acceptBtn.addEventListener("click", () => {
-            localStorage.setItem(CONSENT_KEY, "true");
-            banner.style.display = "none";
+      const handler = (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          window.removeEventListener("keydown", handler);
+          activeInputHandler = null;
+          caret.remove();
+          inputSpan.textContent = value;
+          terminal.appendChild(document.createElement("br"));
+          callback(value.trim());
+          return;
+        }
+        if (e.key === "Backspace") {
+          e.preventDefault();
+          value = value.slice(0, -1);
+        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+          value += e.key;
+        }
+        inputSpan.textContent = value;
+        inputSpan.appendChild(caret);
+        terminal.scrollTop = terminal.scrollHeight;
+      };
+      activeInputHandler = handler;
+      window.addEventListener("keydown", handler);
+    }
+
+    // ===== LIBRARY MANAGER =====
+    async function refreshLibraries() {
+      const backend = state.settings.backendUrl;
+      const list = document.getElementById("libraryList");
+      list.textContent = "Loading...";
+      try {
+        const res = await fetch(backend + "/libraries");
+        const libs = await res.json();
+        if (!Array.isArray(libs)) throw new Error("Invalid response");
+        list.innerHTML = "";
+        libs.forEach(lib => {
+          const div = document.createElement("div");
+          div.textContent = `${lib.name} ${lib.version}`;
+          div.className = "px-2 py-0.5 hover:bg-[var(--bg3)]";
+          list.appendChild(div);
         });
-    });
-</script>
+      } catch (err) {
+        list.textContent = "Error loading libraries.";
+      }
+    }
 
+    document.getElementById("installLib").onclick = async () => {
+      const name = document.getElementById("newLibInput").value.trim();
+      if (!name) return;
+      const backend = state.settings.backendUrl;
+      const res = await fetch(backend + "/libraries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+      });
+      const result = await res.json();
+      termWrite(result.message || result.error || JSON.stringify(result));
+      refreshLibraries();
+    };
+
+    document.getElementById("openSettings").addEventListener("click", refreshLibraries);
+        // ===== SAVE / NEW FILE / SETTINGS =====
+    document.getElementById("saveBtn").onclick = () => {
+      state.files[state.active] = editor.getValue();
+      saveState();
+      termWrite("Saved ✓");
+      setStatus("Saved ✓");
+    };
+
+    const newFileModal = document.getElementById("newFileModal");
+    const newFileName = document.getElementById("newFileName");
+    document.getElementById("newFileBtn").onclick = () => {
+      newFileName.value = "";
+      newFileModal.classList.remove("hidden");
+      newFileModal.classList.add("flex");
+      newFileName.focus();
+    };
+    document.getElementById("closeNewFile").onclick = () => {
+      newFileModal.classList.add("hidden");
+    };
+    document.getElementById("createFile").onclick = () => {
+      const name = newFileName.value.trim();
+      if (!name) return;
+      if (!state.files[name]) state.files[name] = "# " + name;
+      if (!state.open.includes(name)) state.open.push(name);
+      openFile(name);
+      newFileModal.classList.add("hidden");
+    };
+
+    const settingsModal = document.getElementById("settingsModal");
+    document.getElementById("closeSettings").onclick = () => {
+      settingsModal.classList.add("hidden");
+    };
+    document.getElementById("saveSettings").onclick = () => {
+      state.settings.backendUrl =
+        document.getElementById("backendUrlInput").value.trim() || "http://127.0.0.1:5000";
+      state.settings.fontSize =
+        parseInt(document.getElementById("fontSizeInput").value || "15", 10);
+      state.settings.minimap =
+        document.getElementById("minimapToggle").checked;
+      saveState();
+      if (editor) {
+        editor.updateOptions({
+          fontSize: state.settings.fontSize,
+          minimap: { enabled: state.settings.minimap }
+        });
+      }
+      settingsModal.classList.add("hidden");
+      termWrite("Settings saved ✓");
+      setStatus("Settings saved ✓");
+    };
+
+    document.getElementById("termClear").onclick = () => {
+      terminal.textContent = "";
+    };
+    document.getElementById("termNew").onclick = () => {
+      termWrite("────── New Session ──────");
+    };
+
+    // ===== TERMINAL RESIZE =====
+    (() => {
+      const header = document.getElementById("terminalHeader");
+      const container = document.getElementById("terminalContainer");
+      let active = false, startY = 0, startH = 0;
+      header.addEventListener("mousedown", e => {
+        active = true;
+        startY = e.clientY;
+        startH = container.offsetHeight;
+        document.body.style.userSelect = "none";
+      });
+      window.addEventListener("mousemove", e => {
+        if (!active) return;
+        const dy = startY - e.clientY;
+        const newH = Math.min(window.innerHeight * 0.8, Math.max(100, startH + dy));
+        container.style.height = newH + "px";
+      });
+      window.addEventListener("mouseup", () => {
+        active = false;
+        document.body.style.userSelect = "";
+      });
+    })();
+
+    // ===== INITIAL SETTINGS LOAD =====
+    document.getElementById("openSettings").onclick = () => {
+      document.getElementById("backendUrlInput").value = state.settings.backendUrl;
+      document.getElementById("fontSizeInput").value = state.settings.fontSize;
+      document.getElementById("minimapToggle").checked = !!state.settings.minimap;
+      settingsModal.classList.remove("hidden");
+      settingsModal.classList.add("flex");
+      refreshLibraries();
+    };
+  </script>
 </body>
 </html>
