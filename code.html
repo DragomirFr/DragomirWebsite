@@ -502,7 +502,7 @@ require(["vs/editor/editor.main"], function () {
     };
     document.getElementById("saveSettings").onclick = () => {
       state.settings.backendUrl =
-        document.getElementById("backendUrlInput").value.trim() || "http://127.0.0.1:5000";
+        document.getElementById("backendUrlInput").value.trim() || "http://192.168.1.51:5000";
       state.settings.fontSize =
         parseInt(document.getElementById("fontSizeInput").value || "15", 10);
       state.settings.minimap =
