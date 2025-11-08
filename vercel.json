@@ -9,6 +9,6 @@
     { "source": "/ai", "destination": "/ai.html" },
     { "source": "/iptv", "destination": "/iptv.html" },
     { "source": "/wallpaper", "destination": "/wallpaper.html" },
-    { "source": "/api/:path*", "destination": "http://api.dragomirz.xyz/:path*" }
+    { "source": "/api/:path*", "destination": "http://api.dragomirz.xyz:14806/:path*" }
   ]
 }
