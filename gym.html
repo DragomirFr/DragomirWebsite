@@ -1,187 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dragomir's Tracker</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        // Use a consistent key for localStorage
-        const STORAGE_KEY = 'workout_tracker_data';
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dragomir's Tracker v2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
-        // --- Date and UI Generation Logic ---
-        function getRecentDates(count) {
-            const dates = [];
-            for (let i = 0; i < count; i++) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                dates.push(d);
-            }
-            return dates.reverse(); // Show oldest to newest
-        }
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: radial-gradient(circle at top, #0f172a, #0a0f1a);
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
+  }
 
-        function getFormattedDate(date) {
-            return date.toISOString().split('T')[0];
-        }
+  .glass {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(65,105,225,0.2);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 0 25px rgba(65,105,225,0.15);
+  }
 
-        function getWeekday(date) {
-            return date.toLocaleDateString('en-US', { weekday: 'short' });
-        }
+  .fade-in {
+    animation: fadeIn 0.4s ease-in-out;
+  }
+  @keyframes fadeIn {
+    from {opacity:0; transform:translateY(5px);}
+    to {opacity:1; transform:translateY(0);}
+  }
 
-        function calculateStreak(workouts) {
-            if (Object.keys(workouts).length === 0) return 0;
+  .month-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 50%;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(65,105,225,0.4);
+    color: #93c5fd;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+    box-shadow: 0 0 10px rgba(65,105,225,0.2);
+  }
 
-            const today = new Date();
-            let streakEndDay = new Date(today);
-            let currentStreak = 0;
+  .month-btn:hover {
+    background: rgba(65,105,225,0.3);
+    color: white;
+    box-shadow: 0 0 20px rgba(65,105,225,0.5);
+    transform: scale(1.1);
+  }
 
-            let streakInProgress = true;
-            while(streakInProgress) {
-                const formattedDate = getFormattedDate(streakEndDay);
-                if (workouts[formattedDate]) {
-                    currentStreak++;
-                    streakEndDay.setDate(streakEndDay.getDate() - 1);
-                } else {
-                    streakInProgress = false;
-                }
-            }
+  .month-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 25px rgba(65,105,225,0.7);
+  }
 
-            return currentStreak;
-        }
-
-        // --- Data Handling with localStorage ---
-        function loadData() {
-            try {
-                const data = localStorage.getItem(STORAGE_KEY);
-                return data ? JSON.parse(data) : {};
-            } catch (e) {
-                console.error("Error loading data from localStorage:", e);
-                return {};
-            }
-        }
-
-        function saveData(data) {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                updateUI();
-            } catch (e) {
-                console.error("Error saving data to localStorage:", e);
-            }
-        }
-        
-        // --- Core UI Rendering and Event Handling ---
-        function updateUI() {
-            const daysContainer = document.getElementById('days-container');
-            const storedWorkouts = loadData();
-            const dates = getRecentDates(5);
-            
-            daysContainer.innerHTML = ''; // Clear to prevent duplicates
-
-            dates.forEach(date => {
-                const formattedDate = getFormattedDate(date);
-                const workedOut = storedWorkouts[formattedDate] || false;
-                
-                const dayCard = document.createElement('div');
-                dayCard.className = 'flex flex-col items-center p-6 bg-slate-800 rounded-xl shadow-lg hover:bg-slate-700 transition-colors duration-200 cursor-pointer';
-                
-                const dayLabel = document.createElement('span');
-                dayLabel.className = 'text-lg font-semibold text-slate-300';
-                dayLabel.textContent = getWeekday(date);
-
-                const dateLabel = document.createElement('span');
-                dateLabel.className = 'text-sm text-slate-500 mt-1';
-                dateLabel.textContent = formattedDate;
-
-                const checkboxContainer = document.createElement('label');
-                checkboxContainer.className = 'flex items-center justify-center mt-4 cursor-pointer';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'hidden';
-                checkbox.checked = workedOut;
-
-                const customCheckbox = document.createElement('div');
-                customCheckbox.className = `w-8 h-8 rounded-full border-2 border-slate-600 transition-all duration-300 flex items-center justify-center ${workedOut ? 'bg-emerald-500 border-emerald-500 scale-110' : 'bg-slate-700'}`;
-                customCheckbox.innerHTML = `
-                    <svg class="w-5 h-5 text-white transition-opacity duration-300 ${workedOut ? 'opacity-100' : 'opacity-0'}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                `;
-
-                // Add event listener to handle changes
-                checkbox.addEventListener('change', () => {
-                    const updatedWorkouts = loadData();
-                    updatedWorkouts[formattedDate] = checkbox.checked;
-                    saveData(updatedWorkouts);
-                });
-
-                checkboxContainer.appendChild(checkbox);
-                checkboxContainer.appendChild(customCheckbox);
-                
-                dayCard.appendChild(dayLabel);
-                dayCard.appendChild(dateLabel);
-                dayCard.appendChild(checkboxContainer);
-                daysContainer.appendChild(dayCard);
-            });
-            
-            const currentStreak = calculateStreak(storedWorkouts);
-            document.getElementById('streak-count').textContent = currentStreak;
-        }
-
-        // Initialize UI on window load
-        window.onload = () => {
-            const loading = document.getElementById('loading');
-            if (loading) loading.style.display = 'none';
-            updateUI();
-        };
-    </script>
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #111827;
-            background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 10px);
-        }
-        
-        input[type="checkbox"]:checked + div > svg {
-            opacity: 1 !important;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-out;
-        }
-    </style>
+  input[type="checkbox"]:checked + div svg {
+    opacity: 1 !important;
+  }
+</style>
 </head>
-<body class="text-white min-h-screen flex items-center justify-center p-4">
-    <div id="loading" class="text-xl text-slate-400">Loading and authenticating...</div>
 
-    <!-- Message Box -->
-    <div id="message-box" class="fixed top-5 left-1/2 -translate-x-1/2 p-4 bg-red-600 text-white rounded-lg shadow-lg hidden z-50"></div>
+<body>
+<div class="w-full max-w-4xl glass rounded-2xl p-6 md:p-10 fade-in">
+  <h1 class="text-3xl md:text-4xl font-bold text-center mb-1">Dragomir’s Workout Tracker</h1>
+  <p class="text-slate-400 text-center mb-8">Track your workouts across months and build your streak.</p>
 
-    <div class="w-full max-w-2xl mx-auto bg-slate-900 bg-opacity-80 backdrop-blur-md rounded-2xl shadow-2xl p-6 md:p-10 flex flex-col items-center space-y-8 fade-in">
-        <div class="flex flex-col items-center">
-            <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-center text-white">Dragomir's Workout Tracker</h1>
-            <p class="text-sm text-slate-400 text-center mt-2">Check off each day you worked out to track your progress.</p>
-        </div>
+  <!-- Month Navigation -->
+  <div class="flex items-center justify-between mb-6">
+    <button id="prev-month" class="month-btn" title="Previous Month">←</button>
+    <span id="month-label" class="text-2xl font-semibold text-white"></span>
+    <button id="next-month" class="month-btn" title="Next Month">→</button>
+  </div>
 
-        <div class="w-full text-center">
-            <div id="streak-display" class="p-4 bg-slate-800 rounded-full shadow-inner inline-flex items-center space-x-2">
-                <span class="text-xl font-bold">🔥</span>
-                <span id="streak-count" class="text-3xl font-bold text-emerald-400">0</span>
-                <span class="text-lg text-slate-300">day streak</span>
-            </div>
-        </div>
-
-        <div id="days-container" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            <!-- Day cards will be inserted here by JavaScript -->
-        </div>
+  <!-- Stats -->
+  <div class="flex flex-wrap justify-center gap-4 mb-8">
+    <div class="bg-slate-800/70 px-6 py-3 rounded-full flex items-center space-x-2">
+      <span>🔥</span>
+      <span class="font-bold text-emerald-400 text-2xl" id="streak-count">0</span>
+      <span class="text-slate-300">day streak</span>
     </div>
+    <div class="bg-slate-800/70 px-6 py-3 rounded-full flex items-center space-x-2">
+      <span>🏋️‍♂️</span>
+      <span class="font-bold text-blue-400 text-2xl" id="total-count">0</span>
+      <span class="text-slate-300">workouts this month</span>
+    </div>
+  </div>
+
+  <!-- Days Grid -->
+  <div id="days-container" class="grid grid-cols-5 sm:grid-cols-7 gap-3 text-center"></div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'dragomir_tracker_data';
+  const today = new Date();
+  let currentYear = today.getFullYear();
+  let currentMonth = today.getMonth();
+
+  function getFormattedDate(date) { return date.toISOString().split('T')[0]; }
+  function getMonthName(monthIndex) {
+    return new Date(2025, monthIndex).toLocaleString('default', { month: 'long' });
+  }
+  function daysInMonth(year, month) { return new Date(year, month + 1, 0).getDate(); }
+
+  function loadData() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function saveData(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+  function calculateStreak(data) {
+    const dates = Object.keys(data).filter(d => data[d]);
+    if (dates.length === 0) return 0;
+    const sorted = dates.map(d => new Date(d)).sort((a,b)=>b-a);
+    let streak = 1;
+    for (let i = 1; i < sorted.length; i++) {
+      const diff = (sorted[i-1] - sorted[i]) / (1000*60*60*24);
+      if (diff <= 1.5) streak++;
+      else break;
+    }
+    return streak;
+  }
+
+  function renderMonth(year, month) {
+    const data = loadData();
+    const daysContainer = document.getElementById('days-container');
+    daysContainer.innerHTML = '';
+    const totalDays = daysInMonth(year, month);
+    const monthLabel = document.getElementById('month-label');
+    monthLabel.textContent = `${getMonthName(month)} ${year}`;
+    const monthData = Object.keys(data)
+      .filter(d => new Date(d).getMonth() === month && new Date(d).getFullYear() === year);
+    const totalCount = monthData.filter(d => data[d]).length;
+    document.getElementById('total-count').textContent = totalCount;
+
+    for (let day = 1; day <= totalDays; day++) {
+      const date = new Date(year, month, day);
+      const dateKey = getFormattedDate(date);
+      const workedOut = data[dateKey] || false;
+
+      const card = document.createElement('div');
+      card.className = `p-3 sm:p-4 rounded-xl transition-all duration-200 cursor-pointer ${
+        workedOut ? 'bg-emerald-600/70 hover:bg-emerald-500/80' : 'bg-slate-800/70 hover:bg-slate-700/80'
+      }`;
+
+      card.innerHTML = `
+        <div class="font-semibold text-sm sm:text-base">${day}</div>
+        <div class="text-xs text-slate-400">${date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+        <svg class="w-5 h-5 mx-auto mt-1 text-white transition-opacity duration-200 ${workedOut ? 'opacity-100' : 'opacity-0'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+        </svg>
+      `;
+      card.addEventListener('click', () => {
+        data[dateKey] = !data[dateKey];
+        saveData(data);
+        renderMonth(year, month);
+        updateStreakDisplay();
+      });
+      daysContainer.appendChild(card);
+    }
+  }
+
+  function updateStreakDisplay() {
+    const data = loadData();
+    const streak = calculateStreak(data);
+    document.getElementById('streak-count').textContent = streak;
+  }
+
+  document.getElementById('prev-month').addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderMonth(currentYear, currentMonth);
+  });
+
+  document.getElementById('next-month').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    renderMonth(currentYear, currentMonth);
+  });
+
+  window.onload = () => {
+    renderMonth(currentYear, currentMonth);
+    updateStreakDisplay();
+  };
+</script>
 </body>
 </html>
