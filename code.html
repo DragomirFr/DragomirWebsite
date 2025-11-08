@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Dragomir’s IDE Ultimate v5</title>
+  <title>Dragomir’s IDE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
@@ -171,7 +171,7 @@
     const STORAGE_KEY = "dragomir_ide_v5";
     const CONSENT_KEY = "dragomir_consent_v1";
     let state = {
-      files: { "main.py": "a=int(input('age: '))\\nprint(f'You are {a} years old!')" },
+      files: { "main.py": "print('Dragomirs World!'" },
       open: ["main.py"],
       active: "main.py",
       settings: { backendUrl: "http://127.0.0.1:5000", fontSize: 15, minimap: true }
