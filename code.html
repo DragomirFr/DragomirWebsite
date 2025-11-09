@@ -31,6 +31,48 @@
     #fileExplorer::-webkit-scrollbar-thumb{background:#2d3243;border-radius:9999px;}
     @keyframes blinkCaret{0%,49%{opacity:1;}50%,100%{opacity:0;}}
     .terminal-caret{display:inline-block;width:1px;background:#60a5fa;animation:blinkCaret 1s step-start infinite;}
+
+    @media (max-width: 1024px) {
+  aside {
+    display: none;
+  }
+  .mobile-sidebar-btn {
+    display: flex;
+  }
+  header {
+    padding: 0 1rem;
+  }
+  #editor {
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    height: auto;
+    padding: 0.5rem 1rem;
+  }
+  .flex-1 {
+    flex-direction: column !important;
+  }
+  #terminalContainer {
+    height: 30vh !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #runBtn, #saveBtn, #openSettings {
+    padding: 0.4rem 0.6rem;
+    font-size: 11px;
+  }
+  header span.text-sm {
+    font-size: 12px;
+  }
+}
+
   </style>
 </head>
 
@@ -46,6 +88,10 @@
       <button id="saveBtn" class="px-3 py-1 rounded bg-[var(--accent)] text-xs font-semibold">Save</button>
       <button id="openSettings" class="px-3 py-1 rounded bg-[var(--accent)] text-xs font-semibold">Settings</button>
     </div>
+    <button id="toggleExplorer" class="mobile-sidebar-btn hidden fixed top-3 left-3 z-50 px-3 py-2 bg-[var(--accent)] text-white rounded-lg text-sm">
+  ☰
+</button>
+
   </header>
 
   <!-- Layout -->
@@ -558,6 +604,17 @@ require(["vs/editor/editor.main"], function () {
       settingsModal.classList.add("flex");
       refreshLibraries();
     };
+    const toggleExplorer = document.getElementById("toggleExplorer");
+const sidebar = document.querySelector("aside");
+toggleExplorer.addEventListener("click", () => {
+  sidebar.classList.toggle("hidden");
+  sidebar.classList.toggle("absolute");
+  sidebar.classList.toggle("z-50");
+  sidebar.classList.toggle("w-3/4");
+  sidebar.classList.toggle("h-full");
+  sidebar.classList.toggle("bg-[var(--bg2)]");
+});
+
   </script>
 </body>
 </html>
