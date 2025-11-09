@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/api/main", "destination": "/api/main.py" },
+    { "source": "/api/run", "destination": "http://217.160.125.126:14806/run" },
+    { "source": "/api/libraries", "destination": "http://217.160.125.126:14806/libraries" },
 
     { "source": "/code", "destination": "/code.html" },
     { "source": "/tos", "destination": "/tos.html" },
@@ -11,6 +12,6 @@
     { "source": "/iptv", "destination": "/iptv.html" },
     { "source": "/wallpaper", "destination": "/wallpaper.html" },
 
-    { "source": "/api/(.*)", "destination": "http://217.160.125.126:14806/$1" }
+    { "source": "/(.*)", "destination": "/$1" }
   ]
 }
