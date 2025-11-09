@@ -1,7 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/run", "destination": "http://217.160.125.126:14806/run" },
-    { "source": "/api/libraries", "destination": "http://217.160.125.126:14806/libraries" },
+    { "source": "/api/(.*)", "destination": "http://api.dragomirz.xyz:14806/$1" },
 
     { "source": "/code", "destination": "/code.html" },
     { "source": "/tos", "destination": "/tos.html" },
@@ -10,8 +9,6 @@
     { "source": "/clock", "destination": "/clock.html" },
     { "source": "/ai", "destination": "/ai.html" },
     { "source": "/iptv", "destination": "/iptv.html" },
-    { "source": "/wallpaper", "destination": "/wallpaper.html" },
-
-    { "source": "/(.*)", "destination": "/$1" }
+    { "source": "/wallpaper", "destination": "/wallpaper.html" }
   ]
 }
