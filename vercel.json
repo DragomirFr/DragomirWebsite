@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/api/main", "destination": "/api/main.py" },
+
     { "source": "/code", "destination": "/code.html" },
     { "source": "/tos", "destination": "/tos.html" },
     { "source": "/weather", "destination": "/weather.html" },
@@ -8,6 +9,8 @@
     { "source": "/clock", "destination": "/clock.html" },
     { "source": "/ai", "destination": "/ai.html" },
     { "source": "/iptv", "destination": "/iptv.html" },
-    { "source": "/wallpaper", "destination": "/wallpaper.html" }
+    { "source": "/wallpaper", "destination": "/wallpaper.html" },
+
+    { "source": "/api/(.*)", "destination": "http://217.160.125.126:14806/$1" }
   ]
 }
