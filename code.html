@@ -252,11 +252,11 @@
     // ====== STATE & DEFAULTS ======
     const STORAGE_KEY = "dragomir_glass_ide_final_v2";
     let state = {
-      files: { "main.py": "print('Dragomirs World!')" },
+      files: { "main.py": "print('Hello')\\nname = input('what is your name: ')\\nprint('hi', name)" },
       open: ["main.py"],
       active: "main.py",
       settings: {
-        backendUrl: "https://www.dragomirz.xyz/api",
+        backendUrl: "http://127.0.0.1:14806",
         fontSize: 15,
         minimap: true,
         timeout: 20,
