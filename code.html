@@ -2,365 +2,377 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Dragomir’s IDE</title>
+  <title>Dragomir’s IDE — Glass Edition</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Monaco -->
   <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
+  <!-- JSZip for export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js" integrity="sha512-3g3q1kL4JMAeA6dVJ9JOwF5qy4MoP+sM/QU5S9I9RAvW5kiV0VtoDpFP8Uvh1J1/1Y4tQlwxYrfP3KqN6A4f0g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 
   <style>
     :root {
-      --accent:#3c5bfd;
-      --bg1:#0e1014;
-      --bg2:#14161b;
-      --bg3:#1c1f25;
-      --border:#1f222a;
-      --text:#e5e7eb;
+      --accent:#4a68ff;
+      --bg1:rgba(7,9,13,0.35);
+      --bg2:rgba(11,14,19,0.55);
+      --bg3:rgba(13,16,21,0.4);
+      --border:rgba(255,255,255,0.05);
+      --text:#ecf0ff;
+      --shadow:0 12px 30px rgba(0,0,0,0.25);
     }
     body {
       margin:0;
-      background:var(--bg1);
-      color:var(--text);
+      background:radial-gradient(circle at 20% 20%, #0e1014 0%, #05060A 80%);
+      background-attachment:fixed;
       font-family:'Inter',sans-serif;
+      color:var(--text);
       height:100vh;
       overflow:hidden;
     }
-    .monaco-editor,.monaco-editor *{font-family:'JetBrains Mono',monospace!important;}
-    #terminal::-webkit-scrollbar,#fileExplorer::-webkit-scrollbar{width:6px;}
+    body::before {
+      content:"";
+      position:fixed;
+      inset:0;
+      background:
+        radial-gradient(circle at 10% 90%, rgba(74,104,255,.14), transparent 40%),
+        radial-gradient(circle at 90% 5%, rgba(255,255,255,.05), transparent 35%);
+      filter:blur(110px);
+      z-index:-2;
+    }
+    .glass {
+      background:var(--bg2);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    .monaco-editor, .monaco-editor * {
+      font-family:'JetBrains Mono',monospace!important;
+      -webkit-font-smoothing: subpixel-antialiased !important;
+      text-rendering: optimizeLegibility !important;
+    }
+    #terminal::-webkit-scrollbar,
+    #fileExplorer::-webkit-scrollbar{width:6px;}
     #terminal::-webkit-scrollbar-thumb{background:var(--accent);border-radius:9999px;}
-    #fileExplorer::-webkit-scrollbar-thumb{background:#2d3243;border-radius:9999px;}
-    @keyframes blinkCaret{0%,49%{opacity:1;}50%,100%{opacity:0;}}
-    .terminal-caret{display:inline-block;width:1px;background:#60a5fa;animation:blinkCaret 1s step-start infinite;}
+    #fileExplorer::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.04);border-radius:9999px;}
+
+    #terminalInputBar{
+      display:none;
+      background:rgba(6,8,12,0.5);
+      backdrop-filter: blur(10px);
+      border-top:1px solid rgba(255,255,255,0.03);
+      gap:.5rem;
+      align-items:center;
+      padding:.25rem .6rem;
+    }
+    #terminalInput{
+      background:rgba(0,0,0,0.25);
+      border:1px solid rgba(255,255,255,0.02);
+      border-radius:.5rem;
+      padding:.25rem .5rem;
+      font-size:.7rem;
+      color:#fff;
+      flex:1;
+      outline:none;
+      min-width:0;
+    }
+
+    #splash{
+      background:radial-gradient(circle at 30% 30%, rgba(74,104,255,0.3), rgba(6,8,12,1));
+      animation: fadeSplash 1s ease forwards;
+    }
+    @keyframes fadeSplash {
+      0%{opacity:1;}
+      100%{opacity:0;visibility:hidden;}
+    }
+
+    #cmdPalette{
+      background:rgba(6,8,12,0.8);
+      backdrop-filter: blur(15px);
+      border:1px solid rgba(255,255,255,.03);
+      border-radius: 14px;
+      box-shadow: 0 18px 40px rgba(0,0,0,.35);
+    }
+    #cmdInput{
+      background:rgba(0,0,0,0.35);
+      border:1px solid rgba(255,255,255,0.02);
+      border-radius:.5rem;
+      color:#fff;
+      outline:none;
+    }
+    .cmd-item:hover{
+      background:rgba(255,255,255,0.03);
+    }
+
+    #editor-wrapper {
+      contain: strict;
+      transform: translateZ(0);
+      overflow: hidden;
+      border-radius: 1rem;
+    }
+    #editor {
+      will-change: contents, transform;
+    }
 
     @media (max-width: 1024px) {
-  aside {
-    display: none;
-  }
-  .mobile-sidebar-btn {
-    display: flex;
-  }
-  header {
-    padding: 0 1rem;
-  }
-  #editor {
-    font-size: 14px !important;
-  }
-}
-
-@media (max-width: 768px) {
-  header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-    height: auto;
-    padding: 0.5rem 1rem;
-  }
-  .flex-1 {
-    flex-direction: column !important;
-  }
-  #terminalContainer {
-    height: 30vh !important;
-  }
-}
-
-@media (max-width: 480px) {
-  #runBtn, #saveBtn, #openSettings {
-    padding: 0.4rem 0.6rem;
-    font-size: 11px;
-  }
-  header span.text-sm {
-    font-size: 12px;
-  }
-}
-
+      aside { display: none; }
+      .mobile-sidebar-btn { display: flex; }
+      #terminalContainer { height: 35vh; }
+    }
   </style>
 </head>
-
 <body class="flex flex-col h-screen">
-  <!-- Top bar -->
-  <header class="h-12 flex items-center justify-between px-4 border-b border-[var(--border)] bg-[var(--bg2)]">
-    <div class="flex items-center gap-2">
-      <span class="text-[var(--accent)] font-semibold text-sm">Dragomir’s IDE</span>
-      <span id="status" class="text-xs text-slate-400">Ready</span>
-    </div>
-    <div class="flex items-center gap-2">
-      <button id="runBtn" class="px-3 py-1 rounded bg-[var(--accent)] text-xs font-semibold">Run</button>
-      <button id="saveBtn" class="px-3 py-1 rounded bg-[var(--accent)] text-xs font-semibold">Save</button>
-      <button id="openSettings" class="px-3 py-1 rounded bg-[var(--accent)] text-xs font-semibold">Settings</button>
-    </div>
-    <button id="toggleExplorer" class="mobile-sidebar-btn hidden fixed top-3 left-3 z-50 px-3 py-2 bg-[var(--accent)] text-white rounded-lg text-sm">
-  ☰
-</button>
 
+  <!-- Splash -->
+  <div id="splash" class="fixed inset-0 z-50 flex flex-col items-center justify-center text-center gap-2">
+    <div class="text-xs tracking-[0.3em] uppercase text-slate-300/70">Nylith Softworks</div>
+    <div class="text-3xl font-semibold text-white drop-shadow">Dragomir IDE</div>
+    <div class="text-xs text-white/40">Spinning up editor engine…</div>
+  </div>
+
+  <!-- Top bar -->
+  <header class="h-12 flex items-center justify-between px-4 glass border-b border-[rgba(255,255,255,0.02)]">
+    <div class="flex items-center gap-2">
+      <button id="toggleExplorer" class="mobile-sidebar-btn hidden px-2 py-1 rounded-lg bg-[rgba(74,104,255,0.35)] text-xs">☰</button>
+      <span class="text-[var(--accent)] font-semibold text-sm tracking-tight">Dragomir’s IDE</span>
+      <span id="status" class="text-[10px] text-slate-300/70 bg-white/5 rounded-full px-2 py-[2px]">Ready</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="runBtn" class="px-3 py-1 rounded-lg bg-[var(--accent)] text-xs font-semibold shadow hover:translate-y-[.5px] transition">Run</button>
+      <button id="saveBtn" class="px-3 py-1 rounded-lg bg-white/5 text-xs font-semibold">Save</button>
+      <button id="clearBtn" class="px-3 py-1 rounded-lg bg-white/5 text-xs font-semibold">Clear</button>
+      <button id="openSettings" class="px-3 py-1 rounded-lg bg-white/5 text-xs font-semibold">Settings</button>
+    </div>
   </header>
 
   <!-- Layout -->
-  <div class="flex flex-1 overflow-hidden">
+  <div class="flex flex-1 overflow-hidden gap-3 px-2 py-2">
     <!-- Sidebar -->
-    <aside class="w-56 border-r border-[var(--border)] bg-[var(--bg2)] flex flex-col">
-      <div class="px-3 py-2 text-xs uppercase tracking-wide text-slate-400 border-b border-[var(--border)] flex items-center justify-between">
+    <aside class="w-60 glass rounded-2xl flex flex-col border border-[rgba(255,255,255,0.02)]">
+      <div class="px-3 py-2 text-[10px] uppercase tracking-wide text-slate-200/50 flex items-center justify-between border-b border-white/5">
         <span>Explorer</span>
-        <div class="flex items-center">
-          <button id="newFileBtn" class="flex items-center gap-1 px-2 py-0.5 text-xs rounded hover:bg-[var(--bg3)] text-slate-200">
-            <span class="text-[var(--accent)]">🞧</span> New
-          </button>
-          <div class="h-4 w-px bg-[var(--border)] mx-2"></div>
-          <button id="uploadFileBtn" class="flex items-center gap-1 px-2 py-0.5 text-xs rounded hover:bg-[var(--bg3)] text-slate-200">
-            <span class="text-[var(--accent)]">⭳</span> Import
-          </button>
+        <div class="flex gap-1">
+          <button id="newFileBtn" class="px-2 py-[2px] rounded bg-white/5 text-[10px]">New</button>
+          <button id="uploadFileBtn" class="px-2 py-[2px] rounded bg-white/5 text-[10px]">Import</button>
           <input id="fileInput" type="file" accept=".py,.txt" class="hidden" />
         </div>
       </div>
-      <div id="fileExplorer" class="flex-1 overflow-y-auto text-sm flex flex-col"></div>
+      <div id="fileExplorer" class="flex-1 overflow-y-auto text-xs flex flex-col"></div>
     </aside>
-    <!-- Editor + Terminal -->
-    <div class="flex-1 flex flex-col">
-      <!-- Tabs -->
-      <div id="tabs" class="h-9 flex items-center gap-1 px-2 border-b border-[var(--border)] bg-[var(--bg2)]"></div>
 
-      <!-- Editor -->
-      <div id="editor" class="flex-1 min-h-0"></div>
+    <!-- Editor + Terminal -->
+    <div class="flex-1 flex flex-col gap-2">
+      <!-- Tabs -->
+      <div id="tabs" class="h-9 glass rounded-2xl flex items-center gap-1 px-2 border border-[rgba(255,255,255,0.02)]"></div>
+
+      <!-- Editor panel -->
+      <div id="editor-wrapper" class="flex-1 min-h-0">
+        <div id="editor" class="absolute inset-0 glass rounded-2xl border border-[rgba(255,255,255,0.02)]" style="position:relative; height:100%;"></div>
+      </div>
 
       <!-- Terminal -->
-      <div id="terminalContainer" class="h-44 border-t border-[var(--border)] bg-[var(--bg2)] flex flex-col">
-        <div id="terminalHeader"
-          class="h-7 flex items-center justify-between px-3 text-xs text-slate-400 border-b border-[var(--border)] cursor-row-resize select-none">
+      <div id="terminalContainer" class="h-48 glass rounded-2xl border border-[rgba(255,255,255,0.02)] flex flex-col overflow-hidden">
+        <div id="terminalHeader" class="h-7 flex items-center justify-between px-3 text-[10px] text-slate-200/70 border-b border-white/5 cursor-row-resize select-none">
           <span>Terminal</span>
           <div class="flex gap-2">
-            <button id="termNew" class="hover:text-white">New session</button>
-            <button id="termClear" class="hover:text-white">Clear</button>
+            <button id="termNew" class="hover:text-white/90">New session</button>
+            <button id="termClear" class="hover:text-white/90">Clear</button>
           </div>
         </div>
-        <div id="terminal" class="flex-1 text-xs px-3 py-2 overflow-y-auto whitespace-pre-wrap"></div>
+        <div id="terminal" class="flex-1 text-xs px-3 py-2 overflow-y-auto whitespace-pre-wrap font-mono"></div>
+        <div id="terminalInputBar" class="flex">
+          <span id="terminalPrompt" class="text-slate-200 text-[11px]"></span>
+          <input id="terminalInput" autocomplete="off" />
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Status bar -->
-  <footer id="statusBar"
-    class="h-5 px-3 text-[10px] bg-[var(--bg2)] border-t border-[var(--border)] flex items-center text-slate-400">
+  <footer id="statusBar" class="h-5 px-3 text-[10px] glass border-t border-[rgba(255,255,255,0.02)] flex items-center text-slate-100/60">
     Ready
   </footer>
 
   <!-- New File Modal -->
-  <div id="newFileModal"
-    class="hidden fixed inset-0 z-40 items-center justify-center bg-[rgba(0,0,0,0.35)]">
-    <div class="bg-[var(--bg2)] border border-[var(--border)] rounded-lg w-80 p-4">
+  <div id="newFileModal" class="hidden fixed inset-0 z-40 items-center justify-center bg-[rgba(4,5,6,0.45)] backdrop-blur">
+    <div class="glass w-80 rounded-xl p-4 border border-white/5">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-sm font-semibold">Create new file</h2>
         <button id="closeNewFile" class="text-slate-400 hover:text-white text-sm">✕</button>
       </div>
-      <input id="newFileName"
-        class="w-full mb-3 bg-[var(--bg1)] border border-[var(--border)] rounded px-2 py-1 text-xs"
-        placeholder="my_script.py" />
-      <div class="flex justify-end">
-        <button id="createFile"
-          class="px-3 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Create</button>
+      <input id="newFileName" class="w-full mb-3 bg-black/20 border border-white/5 rounded px-2 py-1 text-xs" placeholder="utils.py" />
+      <div class="flex justify-end gap-2">
+        <button id="createFile" class="px-3 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Create</button>
       </div>
     </div>
   </div>
 
   <!-- Settings Modal -->
-  <div id="settingsModal"
-    class="hidden fixed inset-0 z-40 items-center justify-center bg-[rgba(0,0,0,0.35)]">
-    <div class="bg-[var(--bg2)] border border-[var(--border)] rounded-lg w-80 p-4">
+  <div id="settingsModal" class="hidden fixed inset-0 z-40 items-center justify-center bg-[rgba(4,5,6,0.45)] backdrop-blur">
+    <div class="glass w-80 rounded-xl p-4 border border-white/5">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-sm font-semibold">Settings</h2>
         <button id="closeSettings" class="text-slate-400 hover:text-white text-sm">✕</button>
       </div>
-
       <label class="block text-xs mb-1">Backend URL</label>
-      <input id="backendUrlInput"
-        class="w-full mb-3 bg-[var(--bg1)] border border-[var(--border)] rounded px-2 py-1 text-xs" />
-
+      <input id="backendUrlInput" class="w-full mb-3 bg-black/20 border border-white/5 rounded px-2 py-1 text-xs" />
       <label class="block text-xs mb-1">Editor font size</label>
-      <input id="fontSizeInput" type="number" min="10" max="24"
-        class="w-20 mb-3 bg-[var(--bg1)] border border-[var(--border)] rounded px-2 py-1 text-xs" />
-
+      <input id="fontSizeInput" type="number" min="10" max="24" class="w-20 mb-3 bg-black/20 border border-white/5 rounded px-2 py-1 text-xs" />
+      <label class="block text-xs mb-1">Timeout (seconds)</label>
+      <input id="timeoutInput" type="number" min="3" max="30" class="w-20 mb-3 bg-black/20 border border-white/5 rounded px-2 py-1 text-xs" />
       <label class="flex items-center gap-2 text-xs mb-3">
         <input id="minimapToggle" type="checkbox" class="accent-[var(--accent)]">
         Show minimap
       </label>
-
-      <!-- Libraries Tab -->
-      <div id="libSection" class="border-t border-[var(--border)] mt-3 pt-3">
-        <h3 class="text-xs font-semibold mb-2">Python Libraries</h3>
-        <div id="libraryList" class="max-h-32 overflow-y-auto text-xs mb-2"></div>
-        <div class="flex gap-2">
-          <input id="newLibInput" placeholder="Enter library name"
-            class="flex-1 bg-[var(--bg1)] border border-[var(--border)] rounded px-2 py-1 text-xs" />
-          <button id="installLib"
-            class="px-2 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Install</button>
-        </div>
-      </div>
-
-      <div class="flex justify-end mt-3">
-        <button id="saveSettings"
-          class="px-3 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Save</button>
+      <div class="flex justify-between items-center">
+        <button id="exportProject" class="px-3 py-1 bg-white/5 rounded text-xs">Export project</button>
+        <button id="saveSettings" class="px-3 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Save</button>
       </div>
     </div>
   </div>
 
-  <!-- Consent -->
-  <div id="consentBar"
-    class="hidden fixed bottom-2 left-1/2 -translate-x-1/2 z-50 bg-[var(--bg3)] border border-[var(--border)] rounded-md px-4 py-3 text-xs flex items-center gap-4 shadow-lg">
-    <span>This site uses local storage. By continuing, you agree to the
-      <a href="https://dragomirz.xyz/tos" target="_blank" rel="noreferrer"
-        class="text-[var(--accent)] underline">Terms of Service</a>.
-    </span>
-    <button id="acceptConsent"
-      class="px-3 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Accept</button>
+  <!-- Command Palette -->
+  <div id="cmdPalette" class="hidden fixed inset-0 z-[60] items-start justify-center pt-24">
+    <div class="w-[420px] p-3">
+      <input id="cmdInput" class="w-full px-3 py-2 mb-2 rounded text-sm" placeholder="Run command..." />
+      <div id="cmdList" class="max-h-64 overflow-y-auto text-sm space-y-1"></div>
+    </div>
   </div>
 
-  <!-- Core JavaScript -->
+  <!-- Consent -->
+  <div id="consentBar" class="hidden fixed bottom-2 left-1/2 -translate-x-1/2 z-50 bg-[rgba(6,8,12,0.6)] backdrop-blur rounded-md px-4 py-3 text-xs flex items-center gap-4 border border-white/5">
+    <span>This site uses local storage.</span>
+    <button id="acceptConsent" class="px-3 py-1 bg-[var(--accent)] rounded text-xs font-semibold">Accept</button>
+  </div>
+
   <script>
-    const STORAGE_KEY = "dragomir_ide_v5";
-    const CONSENT_KEY = "dragomir_consent_v1";
+    // ====== STATE & DEFAULTS ======
+    const STORAGE_KEY = "dragomir_glass_ide_final_v2";
     let state = {
       files: { "main.py": "print('Dragomirs World!')" },
       open: ["main.py"],
       active: "main.py",
-      settings: { backendUrl: "https://www.dragomirz.xyz/api", fontSize: 15, minimap: true }
+      settings: {
+        backendUrl: "https://www.dragomirz.xyz/api",
+        fontSize: 15,
+        minimap: true,
+        timeout: 20,
+      }
     };
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try { state = JSON.parse(saved); } catch { }
+    const existing = localStorage.getItem(STORAGE_KEY);
+    if (existing) {
+      try { state = JSON.parse(existing); } catch {}
     }
-        const explorer = document.getElementById("fileExplorer");
-    const consentBar = document.getElementById("consentBar");
-    if (!localStorage.getItem(CONSENT_KEY)) consentBar.classList.remove("hidden");
-    document.getElementById("acceptConsent").onclick = () => {
-      localStorage.setItem(CONSENT_KEY, "1");
-      consentBar.classList.add("hidden");
-    };
-    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-    // ===== MONACO EDITOR =====
-    let editor;
-require.config({ paths: { vs: "https://unpkg.com/monaco-editor@0.44.0/min/vs" } });
-require(["vs/editor/editor.main"], function () {
-  monaco.editor.defineTheme("dragomir-dark", {
-    base: "vs-dark",
-    inherit: true,
-    rules: [],
-    colors: {
-      "editor.background": "#0e1014",
-      "editor.foreground": "#e5e7eb",
-      "editorCursor.foreground": "#3c5bfd",
-      "editorCursor.background": "#0e1014",
-      "editorCursor.border": "#0e1014",
-      "editorLineHighlightBackground": "#16181d",
-      "editorLineNumber.foreground": "#4b5563",
-      "editorLineNumber.activeForeground": "#93c5fd",
-      "editor.selectionBackground": "#3c5bfd40",
-      "editor.inactiveSelectionBackground": "#3c5bfd20"
-    }
-  });
-
-  editor = monaco.editor.create(document.getElementById("editor"), {
-    value: state.files[state.active],
-    language: "python",
-    theme: "dragomir-dark",
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: state.settings.fontSize,
-    fontLigatures: true,
-    cursorStyle: "line-thin",
-    cursorBlinking: "blink",
-    letterSpacing: 0.3,
-    minimap: { enabled: state.settings.minimap },
-    automaticLayout: true
-  });
-
-  renderExplorer();
-  renderTabs();
-});
-
-
-    // ===== TERMINAL =====
+    // ====== ELEMENTS ======
+    const explorer = document.getElementById("fileExplorer");
+    const tabs = document.getElementById("tabs");
     const terminal = document.getElementById("terminal");
     const statusEl = document.getElementById("status");
     const statusBar = document.getElementById("statusBar");
-    const tabs = document.getElementById("tabs");
-    let activeInputHandler = null, currentSessionId = null;
+    const termInputBar = document.getElementById("terminalInputBar");
+    const termPrompt = document.getElementById("terminalPrompt");
+    const termInput = document.getElementById("terminalInput");
+    const cmdPalette = document.getElementById("cmdPalette");
+    const cmdInput = document.getElementById("cmdInput");
+    const cmdList = document.getElementById("cmdList");
 
-    function termWrite(text = "", isErr = false) {
-      const div = document.createElement("div");
-      div.textContent = text;
-      div.style.color = isErr ? "#f87171" : "#d1d5db";
-      terminal.appendChild(div);
-      terminal.scrollTop = terminal.scrollHeight;
-    }
-    function setStatus(msg, tone = "neutral") {
-      statusEl.textContent = msg;
-      statusBar.textContent = msg;
-      statusBar.style.color =
-        tone === "running" ? "#93c5fd" :
-        tone === "error"   ? "#fca5a5" : "#9ca3af";
-    }
+    let editor;
+    let isRunning = false;
+    let currentSessionId = null;
+    let termHistory = [];
+    let termHistoryIndex = -1;
 
-    // ===== FILE EXPLORER + FOLDERS =====
-    function renderExplorer() {
-      explorer.innerHTML = "";
-      const tree = {};
-      Object.keys(state.files).forEach(path => {
-        const parts = path.split("/");
-        let node = tree;
-        parts.forEach((p, i) => {
-          if (!node[p]) node[p] = (i === parts.length - 1) ? null : {};
-          node = node[p] || node;
-        });
+    // ===== MONACO INIT =====
+    require.config({ paths: { vs: "https://unpkg.com/monaco-editor@0.44.0/min/vs" } });
+    require(["vs/editor/editor.main"], function () {
+      monaco.editor.defineTheme("dragomir-dark", {
+        base: "vs-dark",
+        inherit: true,
+        rules: [],
+        colors: {
+          "editor.background": "#0e1014",
+          "editorCursor.foreground": "#4a68ff",
+          "editorLineHighlightBackground": "#151821",
+          "editor.selectionBackground": "#4a68ff30"
+        }
       });
 
-      function draw(obj, parent, prefix = "") {
-        Object.entries(obj).forEach(([key, val]) => {
-          if (val === null) {
-            const row = document.createElement("div");
-            row.className =
-              "flex items-center justify-between pl-6 pr-3 py-1.5 text-xs hover:bg-[var(--bg3)] cursor-pointer " +
-              (prefix + key === state.active ? "bg-[var(--bg3)]" : "");
-            row.textContent = key;
-            row.onclick = () => openFile(prefix + key);
-            parent.appendChild(row);
-          } else {
-            const folder = document.createElement("details");
-            folder.open = true;
-            const summary = document.createElement("summary");
-            summary.textContent = key;
-            summary.className =
-              "cursor-pointer px-2 py-1 text-xs text-slate-300 hover:text-white";
-            folder.appendChild(summary);
-            draw(val, folder, prefix + key + "/");
-            parent.appendChild(folder);
-          }
-        });
-      }
-      draw(tree, explorer);
+      editor = monaco.editor.create(document.getElementById("editor"), {
+        value: state.files[state.active],
+        language: "python",
+        theme: "dragomir-dark",
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: state.settings.fontSize,
+        minimap: { enabled: state.settings.minimap },
+        automaticLayout: true
+      });
+
+      renderExplorer();
+      renderTabs();
+
+      setTimeout(() => {
+        const sp = document.getElementById("splash");
+        if (sp) sp.remove();
+      }, 1000);
+    });
+
+    // ===== RENDER EXPLORER =====
+    function renderExplorer() {
+      explorer.innerHTML = "";
+      Object.keys(state.files).forEach(name => {
+        const row = document.createElement("div");
+        row.textContent = name;
+        row.className = "px-3 py-1 text-xs cursor-pointer hover:bg-white/5 rounded " + (name === state.active ? "bg-white/5" : "");
+        row.onclick = () => openFile(name);
+        explorer.appendChild(row);
+      });
       saveState();
     }
 
-    // ===== TABS =====
+    // ===== RENDER TABS =====
     function renderTabs() {
       tabs.innerHTML = "";
       state.open.forEach(name => {
         const tab = document.createElement("div");
-        tab.className =
-          "flex items-center gap-2 px-3 h-9 text-xs border-r border-[var(--border)] cursor-pointer " +
-          (name === state.active ? "bg-[var(--bg3)]" : "bg-[var(--bg2)]");
+        tab.className = "flex items-center gap-2 px-3 h-9 text-xs cursor-pointer rounded-xl " +
+          (name === state.active ? "bg-white/5" : "hover:bg-white/5");
         const span = document.createElement("span");
         span.textContent = name;
-        const close = document.createElement("button");
-        close.textContent = "×";
-        close.className = "text-slate-400 hover:text-white";
-        close.onclick = e => { e.stopPropagation(); deleteFile(name); };
-        tab.onclick = () => openFile(name);
         tab.appendChild(span);
-        if (name !== "main.py") tab.appendChild(close);
+
+        if (name !== "main.py") {
+          const close = document.createElement("button");
+          close.textContent = "×";
+          close.className = "text-slate-400 hover:text-white";
+          close.onclick = (e) => {
+            e.stopPropagation();
+            delete state.files[name];
+            state.open = state.open.filter(f => f !== name);
+            if (state.active === name) {
+              state.active = state.open[state.open.length - 1] || "main.py";
+              editor.setValue(state.files[state.active] || "");
+            }
+            renderTabs();
+            renderExplorer();
+            saveState();
+          };
+          tab.appendChild(close);
+        }
+
+        tab.onclick = () => openFile(name);
         tabs.appendChild(tab);
       });
     }
 
     function openFile(name) {
-      if (editor && state.active) state.files[state.active] = editor.getValue();
+      if (editor && state.active) {
+        state.files[state.active] = editor.getValue();
+      }
       state.active = name;
       if (!state.open.includes(name)) state.open.push(name);
       editor.setValue(state.files[name] || "");
@@ -369,36 +381,49 @@ require(["vs/editor/editor.main"], function () {
       saveState();
     }
 
-    function deleteFile(name) {
-      if (name === "main.py") return;
-      delete state.files[name];
-      const idx = state.open.indexOf(name);
-      if (idx !== -1) state.open.splice(idx, 1);
-      if (state.active === name) {
-        state.active = state.open[state.open.length - 1] || "main.py";
-        editor.setValue(state.files[state.active] || "");
+    // ===== TERMINAL =====
+    function termWrite(text="", type="out") {
+      const div = document.createElement("div");
+      if (type === "err") {
+        div.textContent = "⚠ " + text;
+        div.style.color = "#f87171";
+      } else {
+        div.textContent = "→ " + text;
+        div.style.color = "#d1d5db";
       }
-      renderTabs();
-      renderExplorer();
-      saveState();
+      terminal.appendChild(div);
+      terminal.scrollTop = terminal.scrollHeight;
     }
-        // ===== RUN CODE =====
+    function setStatus(msg, tone="neutral") {
+      statusEl.textContent = msg;
+      statusBar.textContent = msg;
+      statusBar.style.color =
+        tone === "running" ? "#6ea8ff" :
+        tone === "error" ? "#f87171" : "#e5e7eb";
+    }
+
+    // ===== RUN LOGIC =====
     document.getElementById("runBtn").onclick = () => {
+      if (isRunning) { termWrite("Already running. Finish current session.", "err"); return; }
       state.files[state.active] = editor.getValue();
       saveState();
+      terminal.textContent = "";
+      termWrite("──── New Session ────");
+      isRunning = true;
       currentSessionId = null;
+      setStatus("Running…","running");
       runOnServer();
     };
 
-    async function runOnServer(userInput = null) {
+    async function runOnServer(userInput=null) {
       const backend = state.settings.backendUrl;
       const payload = userInput
         ? { session_id: currentSessionId, user_input: userInput }
-        : { code: editor.getValue() };
-
-      if (!userInput) termWrite("────── New Session ──────");
-      setStatus("Running…", "running");
-
+        : {
+            code: editor.getValue(),
+            files: Object.entries(state.files).map(([name, content]) => ({ name, content })),
+            timeout: state.settings.timeout
+          };
       try {
         const res = await fetch(backend + "/run", {
           method: "POST",
@@ -407,134 +432,129 @@ require(["vs/editor/editor.main"], function () {
         });
         const data = await res.json();
         if (data.session_id) currentSessionId = data.session_id;
-
-        if (data.needs_input || (data.stdout && data.stdout.includes("__REQUEST_INPUT__MARKER__"))) {
-          let promptText = data.prompt || "";
-          if (data.stdout && data.stdout.includes("__REQUEST_INPUT__MARKER__")) {
-            const [before, after] = data.stdout.split("__REQUEST_INPUT__MARKER__");
-            if (before.trim()) termWrite(before.trim());
-            promptText = after || promptText;
-          } else if (data.stdout && data.stdout.trim()) {
-            termWrite(data.stdout.trim());
-          }
-          termPromptInput(promptText, v => runOnServer(v));
-          setStatus("Waiting for input…", "running");
-          return;
-        }
-
-        if (data.stdout && data.stdout.trim()) termWrite(data.stdout.trim());
-        if (data.stderr && data.stderr.trim()) termWrite(data.stderr.trim(), true);
-        setStatus("Ready ✓");
+        handleRunResponse(data);
       } catch (err) {
-        termWrite("Network error: " + err.message, true);
-        setStatus("Error", "error");
+        termWrite("Network error: " + err.message, "err");
+        setStatus("Error","error");
+        isRunning = false;
+        hideInputBar();
       }
     }
 
-    // ===== INPUT HANDLER =====
-    function termPromptInput(promptText, callback) {
-      if (activeInputHandler) {
-        window.removeEventListener("keydown", activeInputHandler);
-        activeInputHandler = null;
-      }
-      if (promptText && promptText.trim() !== "") {
-        const label = document.createElement("span");
-        label.textContent = promptText;
-        label.style.color = "#60a5fa";
-        terminal.appendChild(label);
-      }
-      const inputSpan = document.createElement("span");
-      inputSpan.style.color = "#60a5fa";
-      let value = "";
-      const caret = document.createElement("span");
-      caret.textContent = "│";
-      caret.className = "terminal-caret";
-      inputSpan.appendChild(caret);
-      terminal.appendChild(inputSpan);
-      terminal.scrollTop = terminal.scrollHeight;
+    // ===== HANDLE RESPONSE (supports __PROMPT__/__OUTPUT__) =====
+    function handleRunResponse(data) {
+      let stdout = data.stdout || "";
+      let stderr = data.stderr || "";
 
-      const handler = (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          window.removeEventListener("keydown", handler);
-          activeInputHandler = null;
-          caret.remove();
-          inputSpan.textContent = value;
-          terminal.appendChild(document.createElement("br"));
-          callback(value.trim());
-          return;
-        }
-        if (e.key === "Backspace") {
-          e.preventDefault();
-          value = value.slice(0, -1);
-        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-          value += e.key;
-        }
-        inputSpan.textContent = value;
-        inputSpan.appendChild(caret);
-        terminal.scrollTop = terminal.scrollHeight;
-      };
-      activeInputHandler = handler;
-      window.addEventListener("keydown", handler);
-    }
+      // 1) strip OUTPUT marker if present
+      if (stdout.includes("__OUTPUT__:")) {
+        stdout = stdout.split("__OUTPUT__:").pop();
+      }
 
-    // ===== LIBRARY MANAGER =====
-    async function refreshLibraries() {
-      const backend = state.settings.backendUrl;
-      const list = document.getElementById("libraryList");
-      list.textContent = "Loading...";
-      try {
-        const res = await fetch(backend + "/libraries");
-        const libs = await res.json();
-        if (!Array.isArray(libs)) throw new Error("Invalid response");
-        list.innerHTML = "";
-        libs.forEach(lib => {
-          const div = document.createElement("div");
-          div.textContent = `${lib.name} ${lib.version}`;
-          div.className = "px-2 py-0.5 hover:bg-[var(--bg3)]";
-          list.appendChild(div);
+      // 2) if prompt marker present => show input bar
+      if (stdout.includes("__PROMPT__:")) {
+        const parts = stdout.split("__PROMPT__:");
+        const visibleText = parts[0].trim();
+        const promptText = parts[1] ? parts[1].trim() : "Input:";
+        if (visibleText) termWrite(visibleText, "out");
+        showInputBar(promptText);
+        setStatus("Waiting for input…","running");
+        return;
+      }
+
+      // normal stdout
+      if (stdout.trim()) {
+        stdout.split(/\r?\n/).forEach(line => {
+          if (line.trim()) termWrite(line.trim(), "out");
         });
-      } catch (err) {
-        list.textContent = "Error loading libraries.";
       }
+      if (stderr.trim()) {
+        termWrite(stderr.trim(), "err");
+      }
+
+      // Backend can also set needs_input directly
+      if (data.needs_input) {
+        const promptText = data.prompt || "Input:";
+        showInputBar(promptText);
+        setStatus("Waiting for input…","running");
+        return;
+      }
+
+      // Finished
+      const rc = typeof data.returncode === "number" ? data.returncode : 0;
+      termWrite(`──── Finished (code ${rc}) ────`, "out");
+      setStatus("Ready ✓");
+      isRunning = false;
+      hideInputBar();
     }
 
-    document.getElementById("installLib").onclick = async () => {
-      const name = document.getElementById("newLibInput").value.trim();
-      if (!name) return;
-      const backend = state.settings.backendUrl;
-      const res = await fetch(backend + "/libraries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name })
-      });
-      const result = await res.json();
-      termWrite(result.message || result.error || JSON.stringify(result));
-      refreshLibraries();
+    // ===== INPUT BAR =====
+    function showInputBar(prompt) {
+      termPrompt.textContent = prompt;
+      termInput.value = "";
+      termInputBar.style.display = "flex";
+      termInput.focus();
+    }
+    function hideInputBar() {
+      termInputBar.style.display = "none";
+      termInput.value = "";
+      termPrompt.textContent = "";
+    }
+
+    termInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const val = termInput.value;
+        termInput.value = "";
+        hideInputBar();
+        termWrite(val, "out");
+        termHistory.push(val);
+        termHistoryIndex = termHistory.length;
+        runOnServer(val);
+      } else if (e.key === "ArrowUp") {
+        if (termHistory.length) {
+          termHistoryIndex = Math.max(0, termHistoryIndex - 1);
+          termInput.value = termHistory[termHistoryIndex] || "";
+        }
+      } else if (e.key === "ArrowDown") {
+        if (termHistory.length) {
+          termHistoryIndex = Math.min(termHistory.length, termHistoryIndex + 1);
+          termInput.value = termHistory[termHistoryIndex] || "";
+        }
+      }
+    });
+
+    // ===== TERMINAL ACTIONS =====
+    document.getElementById("termClear").onclick = () => { terminal.textContent = ""; };
+    document.getElementById("termNew").onclick = () => {
+      isRunning = false;
+      currentSessionId = null;
+      hideInputBar();
+      termWrite("──── New Session ────");
+      setStatus("Ready");
     };
 
-    document.getElementById("openSettings").addEventListener("click", refreshLibraries);
-        // ===== SAVE / NEW FILE / SETTINGS =====
+    // ===== SAVE BUTTON =====
     document.getElementById("saveBtn").onclick = () => {
       state.files[state.active] = editor.getValue();
       saveState();
-      termWrite("Saved ✓");
+      termWrite("Saved ✓","out");
       setStatus("Saved ✓");
     };
 
+    // ===== CLEAR BUTTON =====
+    document.getElementById("clearBtn").onclick = () => { terminal.textContent = ""; };
+
+    // ===== NEW FILE MODAL =====
     const newFileModal = document.getElementById("newFileModal");
-    const newFileName = document.getElementById("newFileName");
     document.getElementById("newFileBtn").onclick = () => {
-      newFileName.value = "";
+      document.getElementById("newFileName").value = "";
       newFileModal.classList.remove("hidden");
       newFileModal.classList.add("flex");
-      newFileName.focus();
     };
-    document.getElementById("closeNewFile").onclick = () => {
-      newFileModal.classList.add("hidden");
-    };
+    document.getElementById("closeNewFile").onclick = () => newFileModal.classList.add("hidden");
     document.getElementById("createFile").onclick = () => {
-      const name = newFileName.value.trim();
+      const name = document.getElementById("newFileName").value.trim();
       if (!name) return;
       if (!state.files[name]) state.files[name] = "# " + name;
       if (!state.open.includes(name)) state.open.push(name);
@@ -542,79 +562,167 @@ require(["vs/editor/editor.main"], function () {
       newFileModal.classList.add("hidden");
     };
 
-    const settingsModal = document.getElementById("settingsModal");
-    document.getElementById("closeSettings").onclick = () => {
-      settingsModal.classList.add("hidden");
-    };
-    document.getElementById("saveSettings").onclick = () => {
-      state.settings.backendUrl =
-        document.getElementById("backendUrlInput").value.trim() || "http://192.168.1.51:5000";
-      state.settings.fontSize =
-        parseInt(document.getElementById("fontSizeInput").value || "15", 10);
-      state.settings.minimap =
-        document.getElementById("minimapToggle").checked;
+    // ===== IMPORT FILE =====
+    document.getElementById("uploadFileBtn").onclick = () => document.getElementById("fileInput").click();
+    document.getElementById("fileInput").onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      state.files[file.name] = text;
+      if (!state.open.includes(file.name)) state.open.push(file.name);
+      openFile(file.name);
+      renderExplorer();
       saveState();
-      if (editor) {
-        editor.updateOptions({
-          fontSize: state.settings.fontSize,
-          minimap: { enabled: state.settings.minimap }
-        });
-      }
-      settingsModal.classList.add("hidden");
-      termWrite("Settings saved ✓");
-      setStatus("Settings saved ✓");
+      e.target.value = "";
     };
 
-    document.getElementById("termClear").onclick = () => {
-      terminal.textContent = "";
-    };
-    document.getElementById("termNew").onclick = () => {
-      termWrite("────── New Session ──────");
-    };
-
-    // ===== TERMINAL RESIZE =====
-    (() => {
-      const header = document.getElementById("terminalHeader");
-      const container = document.getElementById("terminalContainer");
-      let active = false, startY = 0, startH = 0;
-      header.addEventListener("mousedown", e => {
-        active = true;
-        startY = e.clientY;
-        startH = container.offsetHeight;
-        document.body.style.userSelect = "none";
-      });
-      window.addEventListener("mousemove", e => {
-        if (!active) return;
-        const dy = startY - e.clientY;
-        const newH = Math.min(window.innerHeight * 0.8, Math.max(100, startH + dy));
-        container.style.height = newH + "px";
-      });
-      window.addEventListener("mouseup", () => {
-        active = false;
-        document.body.style.userSelect = "";
-      });
-    })();
-
-    // ===== INITIAL SETTINGS LOAD =====
+    // ===== SETTINGS MODAL =====
+    const settingsModal = document.getElementById("settingsModal");
     document.getElementById("openSettings").onclick = () => {
       document.getElementById("backendUrlInput").value = state.settings.backendUrl;
       document.getElementById("fontSizeInput").value = state.settings.fontSize;
+      document.getElementById("timeoutInput").value = state.settings.timeout;
       document.getElementById("minimapToggle").checked = !!state.settings.minimap;
       settingsModal.classList.remove("hidden");
       settingsModal.classList.add("flex");
-      refreshLibraries();
     };
-    const toggleExplorer = document.getElementById("toggleExplorer");
-const sidebar = document.querySelector("aside");
-toggleExplorer.addEventListener("click", () => {
-  sidebar.classList.toggle("hidden");
-  sidebar.classList.toggle("absolute");
-  sidebar.classList.toggle("z-50");
-  sidebar.classList.toggle("w-3/4");
-  sidebar.classList.toggle("h-full");
-  sidebar.classList.toggle("bg-[var(--bg2)]");
-});
+    document.getElementById("closeSettings").onclick = () => settingsModal.classList.add("hidden");
+    document.getElementById("saveSettings").onclick = () => {
+      state.settings.backendUrl = document.getElementById("backendUrlInput").value.trim() || state.settings.backendUrl;
+      state.settings.fontSize = parseInt(document.getElementById("fontSizeInput").value || "15",10);
+      state.settings.timeout = parseInt(document.getElementById("timeoutInput").value || "20",10);
+      state.settings.minimap = document.getElementById("minimapToggle").checked;
+      if (editor) editor.updateOptions({ fontSize: state.settings.fontSize, minimap: { enabled: state.settings.minimap } });
+      saveState();
+      termWrite("Settings saved ✓");
+      settingsModal.classList.add("hidden");
+    };
 
+    // ===== EXPORT PROJECT =====
+    document.getElementById("exportProject").onclick = () => {
+      const zip = new JSZip();
+      Object.entries(state.files).forEach(([name, content]) => {
+        zip.file(name, content);
+      });
+      zip.generateAsync({type:"blob"}).then((content)=>{
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(content);
+        a.download = "dragomir_project.zip";
+        a.click();
+      });
+    };
+
+    // ===== COMMAND PALETTE =====
+    const commands = [
+      { name:"Run code", action: () => document.getElementById("runBtn").click() },
+      { name:"Save file", action: () => document.getElementById("saveBtn").click() },
+      { name:"New file", action: () => document.getElementById("newFileBtn").click() },
+      { name:"Open settings", action: () => document.getElementById("openSettings").click() },
+      { name:"Clear terminal", action: () => document.getElementById("clearBtn").click() },
+      { name:"Export project", action: () => document.getElementById("exportProject").click() },
+      { name:"Reset session (client)", action: () => document.getElementById("termNew").click() },
+    ];
+
+    function openCmd() {
+      cmdPalette.classList.remove("hidden");
+      cmdPalette.classList.add("flex");
+      cmdInput.value = "";
+      renderCmdList(commands);
+      cmdInput.focus();
+    }
+    function closeCmd() {
+      cmdPalette.classList.add("hidden");
+    }
+    function renderCmdList(list) {
+      cmdList.innerHTML = "";
+      list.forEach((cmd, idx) => {
+        const item = document.createElement("div");
+        item.className = "cmd-item px-3 py-2 rounded text-sm cursor-pointer flex items-center justify-between";
+        item.textContent = cmd.name;
+        item.onclick = () => { cmd.action(); closeCmd(); };
+        cmdList.appendChild(item);
+        if (idx === 0) item.classList.add("bg-white/5");
+      });
+    }
+    cmdInput.addEventListener("input", () => {
+      const q = cmdInput.value.toLowerCase();
+      const filtered = commands.filter(c => c.name.toLowerCase().includes(q));
+      renderCmdList(filtered.length ? filtered : commands);
+    });
+    cmdPalette.addEventListener("click",(e)=>{ if(e.target===cmdPalette) closeCmd(); });
+
+    // ===== SHORTCUTS =====
+    window.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        openCmd();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        document.getElementById("saveBtn").click();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("runBtn").click();
+        return;
+      }
+      if (e.key === "Escape") {
+        settingsModal.classList.add("hidden");
+        document.getElementById("newFileModal").classList.add("hidden");
+        closeCmd();
+      }
+    });
+
+    // ===== MOBILE SIDEBAR =====
+    const toggleExplorerBtn = document.getElementById("toggleExplorer");
+    const sidebar = document.querySelector("aside");
+    toggleExplorerBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("hidden");
+      sidebar.classList.toggle("absolute");
+      sidebar.classList.toggle("z-50");
+      sidebar.classList.toggle("w-3/4");
+      sidebar.classList.toggle("h-full");
+      sidebar.classList.toggle("bg-[rgba(11,14,19,0.9)]");
+    });
+
+    // ===== CONSENT =====
+    const consentBar = document.getElementById("consentBar");
+    if (!localStorage.getItem("dragomir_consent")) consentBar.classList.remove("hidden");
+    document.getElementById("acceptConsent").onclick = () => {
+      localStorage.setItem("dragomir_consent","1");
+      consentBar.classList.add("hidden");
+    };
+
+    // ===== TERMINAL RESIZE =====
+    (function () {
+      const header = document.getElementById("terminalHeader");
+      const container = document.getElementById("terminalContainer");
+      let active = false, startY = 0, startH = 0;
+      header.addEventListener("mousedown",(e)=>{
+        active = true; startY = e.clientY; startH = container.offsetHeight; document.body.style.userSelect="none";
+      });
+      window.addEventListener("mousemove",(e)=>{
+        if(!active) return;
+        const dy = startY - e.clientY;
+        const newH = Math.min(window.innerHeight * 0.8, Math.max(120, startH + dy));
+        container.style.height = newH + "px";
+      });
+      window.addEventListener("mouseup",()=>{ active=false; document.body.style.userSelect=""; });
+    })();
+
+    // ===== AUTOSAVE =====
+    setInterval(() => {
+      if (!editor) return;
+      state.files[state.active] = editor.getValue();
+      saveState();
+    }, 10000);
+
+    window.addEventListener("beforeunload", () => {
+      if (editor) state.files[state.active] = editor.getValue();
+      saveState();
+    });
   </script>
 </body>
 </html>
