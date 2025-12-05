@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Install Among Us Mods</title>
+  <style>
+    :root {
+      --bg: #0f1724;
+      --card: #0b1220;
+      --accent: #ff6b6b;
+      --muted: #9aa4b2;
+      --glass: rgba(255,255,255,0.04);
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #071026 0%, #0f1b2b 100%);
+      color: #e6eef6;
+    }
+    .card {
+      width: 420px;
+      padding: 24px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+    h1 { margin: 0 0 8px 0; font-size: 20px; }
+    p { color: var(--muted); margin: 0 0 18px 0; font-size: 13px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 0;
+      padding: 10px 14px;
+      background: linear-gradient(90deg,var(--accent), #ff4757);
+      color: white;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(255,107,107,0.16);
+    }
+    .btn[disabled] { opacity: 0.6; cursor: default; }
+    .progress-wrap {
+      margin-top: 14px;
+    }
+    .progress {
+      height: 12px;
+      background: var(--glass);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      width: 100%;
+    }
+    .progress > i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg,#ffd6d6, #ff6b6b);
+      transition: width 150ms linear;
+    }
+    .meta {
+      margin-top: 8px;
+      display:flex;
+      justify-content:space-between;
+      color:var(--muted);
+      font-size: 12px;
+    }
+    .note { margin-top: 12px; color: var(--muted); font-size: 12px; }
+    .link-fallback { margin-top: 12px; display:block; font-size:13px; color:#9fbadf; text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <div class="card" role="main" aria-labelledby="title">
+    <h1 id="title">Install Among Us Mods</h1>
+    <p>Click the button to download the mod package. After download, follow the included README in the zip for installation instructions.</p>
+
+    <button id="installBtn" class="btn" type="button">
+      ⬇️ Install Mods
+    </button>
+
+    <div class="progress-wrap" id="progressWrap" style="display:none;">
+      <div class="progress" aria-hidden="true">
+        <i id="bar"></i>
+      </div>
+      <div class="meta">
+        <span id="status">Starting...</span>
+        <span id="percent">0%</span>
+      </div>
+    </div>
+
+    <a id="fallbackLink" class="link-fallback" href="#" download style="display:none;">Direct download (fallback)</a>
+
+    <div class="note">
+      <strong>Hosting note:</strong> replace the placeholder URL in the script with your zip file URL and make sure CORS is enabled on that URL.
+    </div>
+  </div>
+
+  <script>
+    // ====== CONFIG: replace this with the direct URL to your .zip file ======
+    const ZIP_FILE_URL = "https://example.com/amongus-mods.zip";
+    const DOWNLOAD_FILENAME = "amongus-mods.zip";
+    // ======================================================================
+
+    const btn = document.getElementById("installBtn");
+    const bar = document.getElementById("bar");
+    const status = document.getElementById("status");
+    const percent = document.getElementById("percent");
+    const progressWrap = document.getElementById("progressWrap");
+    const fallbackLink = document.getElementById("fallbackLink");
+
+    btn.addEventListener("click", () => {
+      // simple validation of URL
+      if (!ZIP_FILE_URL || ZIP_FILE_URL.includes("example.com")) {
+        alert("Please update the ZIP_FILE_URL in the page script to the real file location before using.");
+        return;
+      }
+      downloadZipWithProgress(ZIP_FILE_URL);
+    });
+
+    async function downloadZipWithProgress(url) {
+      btn.disabled = true;
+      progressWrap.style.display = "block";
+      fallbackLink.style.display = "none";
+      status.textContent = "Connecting...";
+      percent.textContent = "0%";
+      bar.style.width = "0%";
+
+      try {
+        const resp = await fetch(url, { method: "GET" });
+        if (!resp.ok) throw new Error("Network response was not OK: " + resp.status);
+
+        // If server didn't provide a body (unlikely), fallback to direct link
+        if (!resp.body) {
+          throw new Error("Readable stream not supported by this response — using fallback.");
+        }
+
+        const contentLength = resp.headers.get("Content-Length");
+        const total = contentLength ? parseInt(contentLength, 10) : null;
+
+        const reader = resp.body.getReader();
+        const chunks = [];
+        let received = 0;
+
+        status.textContent = "Downloading...";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          if (total) {
+            const pct = Math.round((received / total) * 100);
+            bar.style.width = pct + "%";
+            percent.textContent = pct + "%";
+          } else {
+            // unknown total: show a pseudo-progress
+            const pseudo = Math.min(99, Math.round((received / (1024*1024)) % 100));
+            bar.style.width = pseudo + "%";
+            percent.textContent = received + " bytes";
+          }
+        }
+
+        // assemble blob and trigger download
+        const blob = new Blob(chunks, { type: "application/zip" });
+        const blobUrl = URL.createObjectURL(blob);
+
+        // create and click a temporary anchor to download
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = DOWNLOAD_FILENAME;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        // release memory after a short while
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+
+        status.textContent = "Download complete";
+        bar.style.width = "100%";
+        percent.textContent = "100%";
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Download failed — fallback available";
+        percent.textContent = "—";
+        fallbackLink.style.display = "inline-block";
+        fallbackLink.href = url;
+        fallbackLink.download = DOWNLOAD_FILENAME;
+        // give the user an extra option (open in new tab)
+        fallbackLink.target = "_blank";
+        fallbackLink.textContent = "Direct download (open in new tab)";
+        alert("Automatic download failed. A direct link has been provided — your server may be blocking cross-origin requests (CORS).");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
