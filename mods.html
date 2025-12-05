@@ -1,203 +1,187 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Install Among Us Mods</title>
-  <style>
-    :root {
-      --bg: #0f1724;
-      --card: #0b1220;
-      --accent: #ff6b6b;
-      --muted: #9aa4b2;
-      --glass: rgba(255,255,255,0.04);
-    }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(180deg, #071026 0%, #0f1b2b 100%);
-      color: #e6eef6;
-    }
-    .card {
-      width: 420px;
-      padding: 24px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
-      border: 1px solid rgba(255,255,255,0.03);
-    }
-    h1 { margin: 0 0 8px 0; font-size: 20px; }
-    p { color: var(--muted); margin: 0 0 18px 0; font-size: 13px; }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      border: 0;
-      padding: 10px 14px;
-      background: linear-gradient(90deg,var(--accent), #ff4757);
-      color: white;
-      border-radius: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 6px 14px rgba(255,107,107,0.16);
-    }
-    .btn[disabled] { opacity: 0.6; cursor: default; }
-    .progress-wrap {
-      margin-top: 14px;
-    }
-    .progress {
-      height: 12px;
-      background: var(--glass);
-      border-radius: 8px;
-      overflow: hidden;
-      position: relative;
-      width: 100%;
-    }
-    .progress > i {
-      display: block;
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg,#ffd6d6, #ff6b6b);
-      transition: width 150ms linear;
-    }
-    .meta {
-      margin-top: 8px;
-      display:flex;
-      justify-content:space-between;
-      color:var(--muted);
-      font-size: 12px;
-    }
-    .note { margin-top: 12px; color: var(--muted); font-size: 12px; }
-    .link-fallback { margin-top: 12px; display:block; font-size:13px; color:#9fbadf; text-decoration:underline; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Among Us Mods — Dragomir</title>
+<style>
+  /* --- Basic Reset & Body --- */
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body, html {
+    height:100%;
+    font-family: 'Inter', sans-serif;
+    color:#eaf6ff;
+    background: radial-gradient(1200px 600px at 10% 20%, rgba(123,140,255,0.06), transparent 10%),
+                radial-gradient(900px 500px at 85% 80%, rgba(139,231,255,0.03), transparent 8%),
+                linear-gradient(180deg, #030411, #07122a);
+    overflow:hidden;
+  }
+
+  /* --- Starfield Canvas --- */
+  #starfield { position:fixed; inset:0; z-index:0; pointer-events:none; }
+
+  /* --- Nebula Overlay --- */
+  .nebula {
+    position:fixed; inset:-10% -20% -10% -20%; z-index:0;
+    mix-blend-mode:screen;
+    opacity:0.7;
+    background-image:
+      radial-gradient(600px 300px at 10% 20%, rgba(123,140,255,0.10), transparent 12%),
+      radial-gradient(500px 220px at 80% 70%, rgba(139,231,255,0.06), transparent 12%),
+      radial-gradient(400px 200px at 50% 50%, rgba(120,85,180,0.04), transparent 10%);
+    transform: translateZ(0);
+    animation: nebulaShift 20s linear infinite;
+    filter: blur(28px);
+  }
+  @keyframes nebulaShift {
+    0% { transform: translateX(0) translateY(0) scale(1); }
+    50% { transform: translateX(-3%) translateY(2%) scale(1.02); }
+    100% { transform: translateX(0) translateY(0) scale(1); }
+  }
+
+  /* --- Center Card --- */
+  .wrap {
+    position:relative; z-index:2;
+    min-height:100vh;
+    display:flex; justify-content:center; align-items:center;
+    padding:48px;
+  }
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    padding:36px;
+    border-radius:16px;
+    display:grid;
+    grid-template-columns:1fr 420px;
+    gap:28px;
+    align-items:center;
+    box-shadow: 0 10px 40px rgba(2,6,23,0.6);
+    border:1px solid rgba(255,255,255,0.03);
+    backdrop-filter: blur(6px) saturate(120%);
+  }
+  @media (max-width:980px) { .card { grid-template-columns:1fr; padding:24px; gap:18px; } }
+
+  .title { font-size:28px; font-weight:700; margin-bottom:12px; color:#eaf6ff; }
+  .subtitle { font-size:15px; color:rgba(255,255,255,0.55); line-height:1.45; margin-bottom:18px; }
+
+  /* --- Features Chips --- */
+  .features { display:flex; gap:12px; flex-wrap:wrap; margin-top:18px; }
+  .chip {
+    padding:8px 12px; border-radius:12px; font-size:13px;
+    background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.55);
+    border:1px solid rgba(255,255,255,0.02);
+  }
+
+  /* --- Planet Visual --- */
+  .visual { position:relative; height:320px; display:flex; align-items:center; justify-content:center; }
+  @media (max-width:980px){ .visual { height:220px; } }
+
+  .orbital {
+    width:240px; height:240px; border-radius:50%;
+    background: radial-gradient(circle at 28% 24%, rgba(255,255,255,0.06), rgba(0,0,0,0.15) 40%), linear-gradient(180deg,#5467ff 0%, #2f3aa6 100%);
+    box-shadow:0 20px 50px rgba(46,61,123,0.45), inset 0 -6px 30px rgba(0,0,0,0.35);
+    display:grid; place-items:center;
+    transform: translateZ(0);
+    animation: slowFloat 6s ease-in-out infinite;
+    border:1px solid rgba(255,255,255,0.03);
+    position:relative;
+  }
+  @keyframes slowFloat { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-8px); } }
+
+  .planet-surface {
+    width:80%; height:80%; border-radius:50%;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.06), transparent 8%), linear-gradient(180deg,#9cd7ff 0%, #6aa6ff 100%);
+    box-shadow: inset 0 -8px 30px rgba(0,0,0,0.28);
+    transform: rotate(-10deg);
+    position:relative;
+  }
+
+  /* --- Glazed Dragomir Nameplate --- */
+  .nameplate {
+    position:absolute; left:50%; top:50%;
+    transform: translate(-50%, 22%);
+    min-width:140px; padding:8px 18px;
+    border-radius:999px; text-align:center;
+    backdrop-filter: blur(6px); border:1px solid rgba(255,255,255,0.12);
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    box-shadow: 0 6px 18px rgba(10,18,40,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+    color:#eef7ff; font-weight:700; letter-spacing:0.6px; font-size:15px; z-index:4;
+    transition: transform 260ms ease;
+  }
+  .orbital:hover .nameplate { transform: translate(-50%,18%) scale(1.03) rotate(-1deg); }
+
+  /* --- Ring --- */
+  .ring { position:absolute; width:380px; height:380px; border-radius:50%; border-top:3px solid rgba(255,255,255,0.06);
+    transform: rotateX(60deg) rotate(35deg); animation: ringSpin 12s linear infinite; filter: blur(0.4px);
+  }
+  @keyframes ringSpin { from { transform: rotateX(60deg) rotate(35deg) rotate(0deg); } to { transform: rotateX(60deg) rotate(35deg) rotate(360deg); } }
+
+  /* --- Download Button --- */
+  .downloadBox { margin-top:18px; display:flex; flex-direction:column; gap:12px; }
+  .btn {
+    padding:14px 24px; border-radius:12px; border:none; cursor:pointer;
+    font-weight:700; font-size:16px; background:#5567ff; color:white; transition: background 0.2s;
+    text-decoration:none; text-align:center;
+  }
+  .btn:hover { background:#6a80ff; }
+
+  /* --- Progress Note --- */
+  .hint { font-size:12px; color:rgba(255,255,255,0.55); margin-top:8px; }
+
+  /* --- Responsive --- */
+  @media(max-width:520px){
+    .orbital { width:180px; height:180px; }
+    .ring { width:280px; height:280px; }
+    .nameplate { font-size:13px; padding:6px 14px; min-width:120px; }
+  }
+</style>
 </head>
 <body>
-  <div class="card" role="main" aria-labelledby="title">
-    <h1 id="title">Install Among Us Mods</h1>
-    <p>Click the button to download the mod package. After download, follow the included README in the zip for installation instructions.</p>
+<canvas id="starfield"></canvas>
+<div class="nebula"></div>
 
-    <button id="installBtn" class="btn" type="button">
-      ⬇️ Install Mods
-    </button>
-
-    <div class="progress-wrap" id="progressWrap" style="display:none;">
-      <div class="progress" aria-hidden="true">
-        <i id="bar"></i>
-      </div>
-      <div class="meta">
-        <span id="status">Starting...</span>
-        <span id="percent">0%</span>
+<div class="wrap">
+  <section class="card">
+    <div>
+      <h1 class="title">Among Us — Mod Package</h1>
+      <p class="subtitle">Download the complete mod package. Includes installation guide and full assets. Click below to start.</p>
+      <div class="features">
+        <div class="chip">Verified mod pack</div>
+        <div class="chip">Installation guide included</div>
+        <div class="chip">Large file support</div>
+        <div class="chip">Safe direct download</div>
       </div>
     </div>
-
-    <a id="fallbackLink" class="link-fallback" href="#" download style="display:none;">Direct download (fallback)</a>
-
-    <div class="note">
-      <strong>Hosting note:</strong> replace the placeholder URL in the script with your zip file URL and make sure CORS is enabled on that URL.
+    <div>
+      <div class="visual">
+        <div class="orbital">
+          <div class="planet-surface"></div>
+          <div class="nameplate">DRAGOMIR</div>
+        </div>
+        <div class="ring"></div>
+      </div>
+      <div class="downloadBox">
+        <a class="btn" href="https://github.com/DragomirFr/DragomirWebsite/releases/download/AmongUs/Fruity.Friday.Mods.zip" download>
+          Download Mod Package
+        </a>
+        <div class="hint">If the download doesn’t start automatically, right-click and choose “Save link as…”</div>
+      </div>
     </div>
-  </div>
+  </section>
+</div>
 
-  <script>
-    // ====== CONFIG: replace this with the direct URL to your .zip file ======
-    const ZIP_FILE_URL = "https://example.com/amongus-mods.zip";
-    const DOWNLOAD_FILENAME = "amongus-mods.zip";
-    // ======================================================================
-
-    const btn = document.getElementById("installBtn");
-    const bar = document.getElementById("bar");
-    const status = document.getElementById("status");
-    const percent = document.getElementById("percent");
-    const progressWrap = document.getElementById("progressWrap");
-    const fallbackLink = document.getElementById("fallbackLink");
-
-    btn.addEventListener("click", () => {
-      // simple validation of URL
-      if (!ZIP_FILE_URL || ZIP_FILE_URL.includes("example.com")) {
-        alert("Please update the ZIP_FILE_URL in the page script to the real file location before using.");
-        return;
-      }
-      downloadZipWithProgress(ZIP_FILE_URL);
-    });
-
-    async function downloadZipWithProgress(url) {
-      btn.disabled = true;
-      progressWrap.style.display = "block";
-      fallbackLink.style.display = "none";
-      status.textContent = "Connecting...";
-      percent.textContent = "0%";
-      bar.style.width = "0%";
-
-      try {
-        const resp = await fetch(url, { method: "GET" });
-        if (!resp.ok) throw new Error("Network response was not OK: " + resp.status);
-
-        // If server didn't provide a body (unlikely), fallback to direct link
-        if (!resp.body) {
-          throw new Error("Readable stream not supported by this response — using fallback.");
-        }
-
-        const contentLength = resp.headers.get("Content-Length");
-        const total = contentLength ? parseInt(contentLength, 10) : null;
-
-        const reader = resp.body.getReader();
-        const chunks = [];
-        let received = 0;
-
-        status.textContent = "Downloading...";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          received += value.length;
-          if (total) {
-            const pct = Math.round((received / total) * 100);
-            bar.style.width = pct + "%";
-            percent.textContent = pct + "%";
-          } else {
-            // unknown total: show a pseudo-progress
-            const pseudo = Math.min(99, Math.round((received / (1024*1024)) % 100));
-            bar.style.width = pseudo + "%";
-            percent.textContent = received + " bytes";
-          }
-        }
-
-        // assemble blob and trigger download
-        const blob = new Blob(chunks, { type: "application/zip" });
-        const blobUrl = URL.createObjectURL(blob);
-
-        // create and click a temporary anchor to download
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = DOWNLOAD_FILENAME;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-
-        // release memory after a short while
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-
-        status.textContent = "Download complete";
-        bar.style.width = "100%";
-        percent.textContent = "100%";
-      } catch (err) {
-        console.error(err);
-        status.textContent = "Download failed — fallback available";
-        percent.textContent = "—";
-        fallbackLink.style.display = "inline-block";
-        fallbackLink.href = url;
-        fallbackLink.download = DOWNLOAD_FILENAME;
-        // give the user an extra option (open in new tab)
-        fallbackLink.target = "_blank";
-        fallbackLink.textContent = "Direct download (open in new tab)";
-        alert("Automatic download failed. A direct link has been provided — your server may be blocking cross-origin requests (CORS).");
-      } finally {
-        btn.disabled = false;
-      }
-    }
-  </script>
+<script>
+  // Starfield
+  (function(){
+    const canvas=document.getElementById('starfield');
+    const ctx=canvas.getContext('2d');
+    let w,h,stars=[];
+    function resize(){ w=canvas.width=innerWidth; h=canvas.height=innerHeight; init(); }
+    function init(){ stars=[]; const count=Math.floor((w*h)/12000);
+      for(let i=0;i<count;i++){ stars.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.2+0.2,vx:(Math.random()-0.5)*0.15,vy:(Math.random()-0.5)*0.15,alpha:Math.random()*0.9+0.1,twinkle:Math.random()*0.02+0.005}); } }
+    function draw(){ ctx.clearRect(0,0,w,h); for(let s of stars){ s.alpha+=Math.sin(Date.now()*s.twinkle/1e3)*.0015; ctx.globalAlpha=Math.max(.12,Math.min(1,s.alpha)); ctx.beginPath(); ctx.fillStyle='white'; ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; }
+    function step(){ for(let s of stars){ s.x+=s.vx; s.y+=s.vy; if(s.x<0)s.x=w; if(s.x>w)s.x=0; if(s.y<0)s.y=h; if(s.y>h)s.y=0; } draw(); requestAnimationFrame(step); }
+    addEventListener('resize',resize); resize(); step();
+  })();
+</script>
 </body>
 </html>
