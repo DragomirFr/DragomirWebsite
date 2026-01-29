@@ -10,6 +10,7 @@
     { "source": "/ai", "destination": "/ai.html" },
     { "source": "/iptv", "destination": "/iptv.html" },
     { "source": "/wallpaper", "destination": "/wallpaper.html" },
-    { "source": "/mods", "destination": "/mods.html" }
+    { "source": "/mods", "destination": "/mods.html" },
+    { "source": "/bets", "destination": "/bets.html" }
   ]
 }
