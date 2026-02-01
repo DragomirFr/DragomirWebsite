@@ -14,14 +14,14 @@
     :root{
       --bg:#0b0f1a;
       --panel:#0f1626;
-      --card:#111b2e;
+      --card:rgba(255,255,255,.03);
       --border:rgba(255,255,255,.10);
       --border2:rgba(255,255,255,.14);
       --text:rgba(255,255,255,.92);
       --muted:rgba(255,255,255,.62);
       --muted2:rgba(255,255,255,.48);
 
-      /* Royal blue */
+      /* Royal blue accent */
       --accent:#2b59ff;
       --accentSoft:rgba(43,89,255,.16);
 
@@ -95,17 +95,24 @@
 
     .grid{display:grid;grid-template-columns:1fr;gap:10px;padding:14px}
     .card{
-      background:rgba(255,255,255,.03);
+      background:var(--card);
       border:1px solid rgba(255,255,255,.10);
       border-radius:var(--radius);
       padding:14px;
+      transition: border-color .15s ease, background .15s ease, transform .15s ease;
     }
-    .card:hover{border-color:rgba(43,89,255,.40);background:rgba(43,89,255,.05)}
+    .card:hover{
+      border-color:rgba(43,89,255,.40);
+      background:rgba(43,89,255,.05);
+      transform: translateY(-1px);
+    }
+
     .topline{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
     .match{font-weight:700;font-size:14px;line-height:1.25}
     .meta{margin-top:6px;color:var(--muted);font-size:12px}
     ul{margin:10px 0 0 18px;padding:0}
     li{margin:6px 0;color:rgba(255,255,255,.86);font-size:12.5px;line-height:1.45}
+
     .tag{
       display:inline-flex;align-items:center;gap:8px;
       border:1px solid rgba(43,89,255,.45);
@@ -126,7 +133,7 @@
         <div>
           <h1>Dragomir’s Bets</h1>
           <div class="sub">
-            Today’s Premier League picks (Bet365 markets). More than one pick per game where it makes sense.
+            Today’s football picks (Bet365 markets). Multiple picks per game where it makes sense.
           </div>
         </div>
       </div>
@@ -139,8 +146,8 @@
     <section class="panel">
       <div class="panelHead">
         <div>
-          <h2>Top 5 picks (most conservative)</h2>
-          <div class="small">These are “lower-variance” picks — not guarantees.</div>
+          <h2>Top 5 picks</h2>
+          <div class="small">Lower-variance picks (not guarantees).</div>
         </div>
       </div>
       <div class="grid" id="top5"></div>
@@ -150,14 +157,14 @@
     <section class="panel">
       <div class="panelHead">
         <div>
-          <h2>All matches</h2>
-          <div class="small">Search by team or market (DNB, Double Chance, Over/Under, Corners).</div>
+          <h2>All games I’m playing today</h2>
+          <div class="small">Search by team or market (DNB, Double Chance, Goals, Corners).</div>
         </div>
         <button class="btn" id="clear">Clear</button>
       </div>
 
       <div class="controls">
-        <input id="q" placeholder="Search… e.g. Arsenal, corners, DNB, Under 3.5" />
+        <input id="q" placeholder="Search… e.g. Villa, Inter, corners, DNB, Over 1.5" />
         <div class="count"><span id="shown">0</span>/<span id="total">0</span></div>
       </div>
 
@@ -170,67 +177,85 @@
   </div>
 
   <script>
-    // Times are UK (GMT): 15:00 / 17:30 / 20:00 on Sat 31 Jan 2026.
+    // UK times for Premier League today: 14:00 (3 games) and 16:30 (Spurs v City).
+    // Extra games included from other leagues also playing today.
     const MATCHES = [
       {
-        kickoff: "15:00",
-        match: "Brighton vs Everton",
-        angle: "Tighter game vibes",
+        kickoff: "14:00",
+        match: "Aston Villa vs Brentford (Premier League)",
+        angle: "Protect the draw + simple totals/corners",
         picks: [
-          "Under 3.5 Goals",
-          "Brighton Draw No Bet (DNB)",
-          "Over 8.5 Match Corners (if you want a corners angle)"
-        ]
-      },
-      {
-        kickoff: "15:00",
-        match: "Leeds vs Arsenal",
-        angle: "If you trust the favourite, protect the draw",
-        picks: [
-          "Arsenal Draw No Bet (DNB)",
-          "Arsenal Double Chance (X2)",
-          "Over 1.5 Arsenal Team Goals (only if you want a slightly riskier add-on)"
-        ]
-      },
-      {
-        kickoff: "15:00",
-        match: "Wolves vs Bournemouth",
-        angle: "Usually a ‘don’t force it’ fixture",
-        picks: [
-          "Under 3.5 Goals",
-          "Bournemouth Double Chance (X2)",
+          "Villa Draw No Bet (DNB)",
+          "Over 1.5 Match Goals",
           "Over 8.5 Match Corners (optional)"
+        ]
+      },
+      {
+        kickoff: "14:00",
+        match: "Manchester United vs Fulham (Premier League)",
+        angle: "Keep it conservative",
+        picks: [
+          "Man United Double Chance (1X)",
+          "Under 4.5 Match Goals"
+        ]
+      },
+      {
+        kickoff: "14:00",
+        match: "Nottingham Forest vs Crystal Palace (Premier League)",
+        angle: "Low-chaos lines only",
+        picks: [
+          "Under 4.5 Match Goals",
+          "Forest Double Chance (1X) (optional)"
+        ]
+      },
+      {
+        kickoff: "16:30",
+        match: "Tottenham vs Manchester City (Premier League)",
+        angle: "Away favourite → cover the draw",
+        picks: [
+          "Man City Double Chance (X2)",
+          "Over 1.5 Match Goals",
+          "Over 8.5 Match Corners (optional)"
+        ]
+      },
+
+      // Non-Premier League (still today)
+      {
+        kickoff: "14:00",
+        match: "Real Madrid vs Rayo Vallecano (La Liga)",
+        angle: "Big favourite → simplest protection lines",
+        picks: [
+          "Real Madrid Double Chance (1X)",
+          "Over 1.5 Match Goals"
         ]
       },
       {
         kickoff: "17:30",
-        match: "Chelsea vs West Ham",
-        angle: "Good spot for goals/corners markets",
+        match: "Dortmund vs Heidenheim (Bundesliga)",
+        angle: "Home favourite + simple goal line",
         picks: [
-          "Chelsea Draw No Bet (DNB)",
-          "Over 1.5 Match Goals",
-          "Chelsea Over 5.5 Team Corners (optional)"
+          "Dortmund Double Chance (1X)",
+          "Over 1.5 Match Goals"
         ]
       },
       {
-        kickoff: "20:00",
-        match: "Liverpool vs Newcastle",
-        angle: "Big game — avoid pure winner if you’re playing ‘safer’",
+        kickoff: "17:00",
+        match: "Cremonese vs Inter (Serie A)",
+        angle: "Away favourite → DNB + soft total",
         picks: [
-          "Liverpool Double Chance (1X)",
-          "Over 1.5 Match Goals",
-          "Over 8.5 Match Corners (optional)"
+          "Inter Draw No Bet (DNB)",
+          "Under 4.5 Match Goals"
         ]
       }
     ];
 
-    // You can reorder these anytime — these are the “top 5 conservative” suggestions.
+    // Top 5 (edit/reorder anytime)
     const TOP5 = [
-      { match:"Leeds vs Arsenal", pick:"Arsenal Draw No Bet (DNB)", tag:"TOP PICK" },
-      { match:"Liverpool vs Newcastle", pick:"Liverpool Double Chance (1X)", tag:"TOP PICK" },
-      { match:"Chelsea vs West Ham", pick:"Over 1.5 Match Goals", tag:"TOP PICK" },
-      { match:"Brighton vs Everton", pick:"Under 3.5 Goals", tag:"TOP PICK" },
-      { match:"Wolves vs Bournemouth", pick:"Under 3.5 Goals", tag:"TOP PICK" }
+      { match:"Tottenham vs Man City", pick:"Man City Double Chance (X2)", tag:"TOP PICK" },
+      { match:"Aston Villa vs Brentford", pick:"Villa Draw No Bet (DNB)", tag:"TOP PICK" },
+      { match:"Real Madrid vs Rayo Vallecano", pick:"Over 1.5 Match Goals", tag:"TOP PICK" },
+      { match:"Man United vs Fulham", pick:"Man United Double Chance (1X)", tag:"TOP PICK" },
+      { match:"Cremonese vs Inter", pick:"Inter Draw No Bet (DNB)", tag:"TOP PICK" }
     ];
 
     const els = {
