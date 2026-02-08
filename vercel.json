@@ -11,6 +11,7 @@
     { "source": "/iptv", "destination": "/iptv.html" },
     { "source": "/wallpaper", "destination": "/wallpaper.html" },
     { "source": "/mods", "destination": "/mods.html" },
-    { "source": "/bets", "destination": "/bets.html" }
+    { "source": "/bets", "destination": "/bets.html" },
+    { "source": "/cityboy", "destination": "cityboy.html" }
   ]
 }
