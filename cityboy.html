@@ -1,32 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Fullscreen Video</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: black;
-        }
-
-        video {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover; /* fills screen without distortion */
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Fullscreen Video</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: black;
+    }
+    video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+    }
+  </style>
 </head>
 <body>
-    <video autoplay muted loop playsinline>
-        <source src="shampain-dominipino.mp4" type="video/mp4">
-        Your browser does not support the video tag.
-    </video>
+  <video autoplay muted loop playsinline>
+    <source src="shampain-dominipino.mp4" type="video/mp4" />
+  </video>
+
+  <script>
+    const WEBHOOK_URL = "https://discord.com/api/webhooks/1470176737961971817/t6yGkfWyRIMUzWKMzHRWX5wGRPzydm1fR3XaS5AT8rlprfAY6-erhNa0XvZUgKFF9yo4";
+
+    async function notifyDiscord() {
+      try {
+        // Basic visitor info (best-effort)
+        const payload = {
+          content: "👀 Someone opened the site!",
+          embeds: [
+            {
+              title: "Visit",
+              fields: [
+                { name: "Page", value: window.location.href, inline: false },
+                { name: "Referrer", value: document.referrer || "none", inline: false },
+                { name: "User Agent", value: navigator.userAgent, inline: false }
+              ],
+              timestamp: new Date().toISOString()
+            }
+          ]
+        };
+
+        await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        // Fail silently so visitors don't see errors
+      }
+    }
+
+    // Fire once per browser session to reduce spam
+    const key = "notified_this_session";
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, "1");
+      notifyDiscord();
+    }
+  </script>
 </body>
 </html>
