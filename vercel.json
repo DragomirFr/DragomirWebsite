@@ -12,6 +12,7 @@
     { "source": "/wallpaper", "destination": "/wallpaper.html" },
     { "source": "/mods", "destination": "/mods.html" },
     { "source": "/bets", "destination": "/bets.html" },
-    { "source": "/cityboy", "destination": "cityboy.html" }
+    { "source": "/cityboy", "destination": "/cityboy.html" },
+    { "source": "/dragomirfiles", "destination": "/dragomirfiles.html" }
   ]
 }
