@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TERMINAL ACCESS | DRAGOMIR</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;700&family=Inter:wght@900&display=swap" rel="stylesheet" />
+
+    <style>
+      :root {
+        --bg: #050608;
+        --fg: #e0e0e0;
+        --cardTop: #1a1d26;
+        --cardBot: #0f111a;
+        --red: #ff3232;
+        --animSpeed: 0.6s;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); color: var(--fg); font-family: 'JetBrains Mono', monospace; }
+
+      /* SCANLINE FX */
+      body::after {
+        content: ""; position: fixed; inset: 0; 
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+                    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+        z-index: 100; background-size: 100% 3px, 3px 100%; pointer-events: none;
+      }
+
+      .stage { width: min(1280px, 100%); text-align: center; position: relative; z-index: 10; padding: 20px; margin: auto; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+      
+      .security-header { position: absolute; top: 20px; width: 100%; left: 0; display: flex; justify-content: space-around; font-size: 10px; color: var(--red); opacity: 0.6; letter-spacing: 2px; }
+
+      .topbar { display: flex; align-items: center; justify-content: center; gap: 10px; letter-spacing: .35em; color: var(--red); font-size: 12px; margin-bottom: 10px; font-weight: bold; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 15px var(--red); animation: blink 1s infinite; }
+      @keyframes blink { 50% { opacity: 0.2; } }
+
+      h1 { margin: 0; font-family: 'Anton', sans-serif; letter-spacing: .15em; font-size: clamp(40px, 8vw, 100px); color: #fff; text-transform: uppercase; line-height: 1; }
+      .sub-h1 { font-size: 10px; letter-spacing: 0.8em; margin-bottom: 50px; color: rgba(255, 255, 255, 0.2); margin-top: 10px; }
+
+      .grid { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; perspective: 1000px; }
+
+      /* FLIPPER - REBUILT TO PREVENT GHOSTING */
+      .flip {
+        width: 170px; height: 190px; position: relative;
+        background: var(--cardBot); border-radius: 8px;
+        font-size: 110px; font-weight: 900; font-family: 'Inter', sans-serif;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+        border: 1px solid rgba(255,255,255,0.05);
+      }
+
+      .half {
+        position: absolute; left: 0; width: 100%; height: 50%;
+        overflow: hidden; display: flex; justify-content: center;
+        background: var(--cardTop); /* SOLID COLOR */
+        backface-visibility: hidden;
+        z-index: 1;
+      }
+
+      .top { top: 0; border-radius: 8px 8px 0 0; align-items: flex-end; border-bottom: 1px solid rgba(0,0,0,0.3); }
+      .bottom { bottom: 0; border-radius: 0 0 8px 8px; align-items: flex-start; background: var(--cardBot); }
+
+      .half span { line-height: 1; transform: translateY(50%); color: #fff; }
+      .bottom span { transform: translateY(-50%); }
+
+      /* THE FLAP (Physical piece that moves) */
+      .flap {
+        position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+        z-index: 10; transform-origin: bottom; 
+        transform-style: preserve-3d;
+        transition: transform var(--animSpeed) ease-in-out;
+      }
+
+      .flap .half { width: 100%; height: 100%; }
+      .flap .half.bottom { transform: rotateX(-180deg); z-index: 11; }
+
+      .animating .flap { transform: rotateX(-180deg); }
+
+      .hinge { position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: #000; z-index: 20; }
+
+      .label { margin-top: 20px; font-size: 10px; font-weight: bold; letter-spacing: .4em; color: rgba(255, 255, 255, 0.2); }
+
+      /* TERMINAL LOGS */
+      .logs { margin-top: 40px; font-size: 9px; color: #444; text-transform: uppercase; height: 30px; opacity: 0.5; }
+
+      /* ENDED STATE */
+      body.ended { animation: redAlert 0.15s infinite; }
+      @keyframes redAlert { 0%, 100% { background: #050608; } 50% { background: #200; } }
+
+      @media (max-width: 600px) { .flip { width: 85px; height: 110px; font-size: 60px; } }
+    </style>
+  </head>
+
+  <body>
+    <div class="security-header">
+      <span>SECURE_CONNECTION: ACTIVE</span>
+      <span>ENCRYPTION: RSA_4096</span>
+      <span>UPLINK: STABLE</span>
+    </div>
+
+    <div class="stage">
+      <div class="topbar"><span class="dot"></span><span>LIVE DATA EXTRACTION</span></div>
+      <h1>DRAGOMIR FILES</h1>
+      <div class="sub-h1">DECRYPTING SECURE ARCHIVE</div>
+
+      <div class="grid">
+        <div class="cardWrap">
+          <div class="flip" id="f-dd">
+            <div class="half top"><span id="dd-next-t">00</span></div>
+            <div class="half bottom"><span id="dd-curr-b">00</span></div>
+            <div class="flap">
+              <div class="half top"><span id="dd-curr-t">00</span></div>
+              <div class="half bottom"><span id="dd-next-b">00</span></div>
+            </div>
+            <div class="hinge"></div>
+          </div>
+          <div class="label">DAYS</div>
+        </div>
+
+        <div class="cardWrap">
+          <div class="flip" id="f-hh">
+            <div class="half top"><span id="hh-next-t">00</span></div>
+            <div class="half bottom"><span id="hh-curr-b">00</span></div>
+            <div class="flap">
+              <div class="half top"><span id="hh-curr-t">00</span></div>
+              <div class="half bottom"><span id="hh-next-b">00</span></div>
+            </div>
+            <div class="hinge"></div>
+          </div>
+          <div class="label">HOURS</div>
+        </div>
+        
+        <div class="cardWrap">
+          <div class="flip" id="f-mm">
+            <div class="half top"><span id="mm-next-t">00</span></div>
+            <div class="half bottom"><span id="mm-curr-b">00</span></div>
+            <div class="flap">
+              <div class="half top"><span id="mm-curr-t">00</span></div>
+              <div class="half bottom"><span id="mm-next-b">00</span></div>
+            </div>
+            <div class="hinge"></div>
+          </div>
+          <div class="label">MINUTES</div>
+        </div>
+
+        <div class="cardWrap">
+          <div class="flip" id="f-ss">
+            <div class="half top"><span id="ss-next-t">00</span></div>
+            <div class="half bottom"><span id="ss-curr-b">00</span></div>
+            <div class="flap">
+              <div class="half top"><span id="ss-curr-t">00</span></div>
+              <div class="half bottom"><span id="ss-next-b">00</span></div>
+            </div>
+            <div class="hinge"></div>
+          </div>
+          <div class="label">SECONDS</div>
+        </div>
+      </div>
+
+      <div class="logs" id="term-logs">> ACCESSING DATABASE...</div>
+    </div>
+
+    <script>
+      // Target: Feb 16, 2026
+      const TARGET = new Date("2026-02-16T18:00:00Z").getTime();
+
+      function setupFlipper(id) {
+        const el = document.getElementById(`f-${id}`);
+        const nextT = document.getElementById(`${id}-next-t`);
+        const currB = document.getElementById(`${id}-curr-b`);
+        const currT = document.getElementById(`${id}-curr-t`);
+        const nextB = document.getElementById(`${id}-next-b`);
+        
+        let current = "";
+        let isBusy = false;
+
+        return (val) => {
+          if (val === current || isBusy) return;
+          
+          if (current === "") {
+            nextT.textContent = currB.textContent = currT.textContent = nextB.textContent = val;
+            current = val;
+            return;
+          }
+
+          isBusy = true;
+          
+          // Setup the "stage" for the flip
+          nextT.textContent = val;    // New number waits behind the falling flap
+          currB.textContent = current; // Old number stays on bottom until covered
+          currT.textContent = current; // Falling flap shows old number
+          nextB.textContent = val;     // Back of falling flap shows new number
+
+          el.classList.add("animating");
+
+          setTimeout(() => {
+            el.classList.remove("animating");
+            currB.textContent = val; // Set the bottom static to the new number
+            currT.textContent = val;
+            current = val;
+            isBusy = false;
+          }, 600); // Must match --animSpeed
+        };
+      }
+
+      const clocks = {
+        dd: setupFlipper("dd"),
+        hh: setupFlipper("hh"),
+        mm: setupFlipper("mm"),
+        ss: setupFlipper("ss")
+      };
+
+      const messages = [
+        "> BYPASSING SECURITY...", 
+        "> EXTRACTING VOIP LOGS...", 
+        "> DECRYPTING FILE_662.DAT...", 
+        "> HANDSHAKE PROTOCOL 0x55...", 
+        "> DOWNLOADING ARCHIVE..."
+      ];
+
+      function update() {
+        const now = Date.now();
+        let diff = TARGET - now;
+
+        if (diff <= 0) {
+          diff = 0;
+          document.body.classList.add("ended");
+        }
+
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+
+        clocks.dd(String(d).padStart(2, '0'));
+        clocks.hh(String(h).padStart(2, '0'));
+        clocks.mm(String(m).padStart(2, '0'));
+        clocks.ss(String(s).padStart(2, '0'));
+
+        if(s % 5 === 0) {
+          document.getElementById('term-logs').textContent = messages[Math.floor(Math.random() * messages.length)];
+        }
+      }
+
+      setInterval(update, 1000);
+      update();
+    </script>
+  </body>
+</html>
