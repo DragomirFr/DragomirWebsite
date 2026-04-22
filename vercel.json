@@ -14,6 +14,7 @@
     { "source": "/bets", "destination": "/bets.html" },
     { "source": "/cityboy", "destination": "/cityboy.html" },
     { "source": "/dragomirfiles", "destination": "/dragomirfiles.html" },
-    {"source": "/final", "destination": "/final.lua" }
+    {"source": "/final", "destination": "/final.lua" },
+    {"source": "/revision", "destination": "/revision.html" }
   ]
 }
