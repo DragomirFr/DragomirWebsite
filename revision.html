@@ -1,1 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Computer Science Revision Tracker</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a30;
+      --panel-2: #192443;
+      --text: #eef2ff;
+      --muted: #aab4d6;
+      --accent: #6ea8fe;
+      --accent-2: #7ef0c2;
+      --danger: #ff7a7a;
+      --border: rgba(255,255,255,0.1);
+      --shadow: 0 12px 35px rgba(0,0,0,0.35);
+    }
 
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #09101d 0%, #0f1730 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      width: min(1100px, calc(100% - 32px));
+      margin: 32px auto;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(110,168,254,0.18), rgba(126,240,194,0.12));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .toolbar {
+      margin: 22px 0;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+    }
+
+    .search,
+    button,
+    select {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .search {
+      padding: 14px 16px;
+      outline: none;
+    }
+
+    button,
+    select {
+      padding: 14px 16px;
+      cursor: pointer;
+    }
+
+    button:hover,
+    select:hover {
+      background: var(--panel-2);
+    }
+
+    .topics {
+      display: grid;
+      gap: 14px;
+    }
+
+    .topic-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+
+    .topic-card.done {
+      border-color: rgba(126,240,194,0.45);
+      background: rgba(126,240,194,0.08);
+    }
+
+    .checkbox {
+      width: 24px;
+      height: 24px;
+      accent-color: #7ef0c2;
+      cursor: pointer;
+    }
+
+    .topic-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .topic-meta {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .status-pill {
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.86rem;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      min-width: 110px;
+      text-align: center;
+    }
+
+    .done .status-pill {
+      color: #7ef0c2;
+      border-color: rgba(126,240,194,0.35);
+      background: rgba(126,240,194,0.08);
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    .danger {
+      border-color: rgba(255,122,122,0.35);
+      color: #ffd7d7;
+    }
+
+    .danger:hover {
+      background: rgba(255,122,122,0.08);
+    }
+
+    .empty-state {
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.03);
+    }
+
+    @media (max-width: 700px) {
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .topic-card {
+        grid-template-columns: auto 1fr;
+      }
+
+      .status-pill {
+        grid-column: 1 / -1;
+        justify-self: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>Computer Science Revision Tracker</h1>
+      <p class="subtitle">
+        Tick off each topic as you finish revising it. Your progress is saved automatically in your browser using local storage.
+      </p>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" id="completedCount">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Remaining</div>
+          <div class="stat-value" id="remainingCount">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Progress</div>
+          <div class="stat-value" id="progressPercent">0%</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <input id="searchInput" class="search" type="text" placeholder="Search topics..." />
+      <select id="filterSelect" aria-label="Filter topics">
+        <option value="all">Show all</option>
+        <option value="done">Completed only</option>
+        <option value="todo">Not completed only</option>
+      </select>
+      <button id="markAllBtn" type="button">Mark all complete</button>
+    </section>
+
+    <section id="topicsList" class="topics"></section>
+
+    <div class="footer-actions">
+      <button id="clearBtn" class="danger" type="button">Reset all ticks</button>
+      <button id="exportBtn" type="button">Export progress</button>
+      <button id="importBtn" type="button">Import progress</button>
+      <input id="importFile" type="file" accept="application/json" hidden />
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'cs_revision_tracker_v1';
+
+    const topics = [
+      {
+        id: 'data-structures',
+        title: 'Data Structures',
+        meta: 'Queues, linked lists, tuples, stacks, hash tables, dictionaries, graphs, trees, binary search trees, plus programming them'
+      },
+      {
+        id: 'big-o',
+        title: 'Big O',
+        meta: 'Time and space complexity, best/worst/average case efficiency'
+      },
+      {
+        id: 'searching',
+        title: 'Searching Algorithms',
+        meta: 'Linear search and binary search, including code implementation'
+      },
+      {
+        id: 'sorting',
+        title: 'Sorting Algorithms',
+        meta: 'Bubble sort, insertion sort, merge sort, quick sort'
+      },
+      {
+        id: 'dijkstra-a-star',
+        title: "Dijkstra's and A* Algorithm",
+        meta: 'Shortest path algorithms and heuristic pathfinding'
+      },
+      {
+        id: 'processor-structure-fde',
+        title: 'Structure of the Processor & FDE',
+        meta: 'Processor components and the fetch-decode-execute cycle'
+      },
+      {
+        id: 'processor-performance',
+        title: 'Factors Impacting Processor Performance',
+        meta: 'Clock speed, cores, cache, architecture, and more'
+      },
+      {
+        id: 'pipelining',
+        title: 'Pipelining',
+        meta: 'Instruction pipelining, throughput, and hazards'
+      },
+      {
+        id: 'architectures',
+        title: 'Architectures',
+        meta: 'Harvard architecture and von Neumann architecture'
+      },
+      {
+        id: 'cisc-risc',
+        title: 'CISC & RISC',
+        meta: 'Instruction set design and architectural differences'
+      },
+      {
+        id: 'gpu',
+        title: 'GPU',
+        meta: 'Graphics processing units and parallel data processing'
+      },
+      {
+        id: 'multicore-parallel',
+        title: 'Multicore and Parallel Systems',
+        meta: 'Parallel execution, concurrency, and performance gains'
+      },
+      {
+        id: 'input-output-devices',
+        title: 'Input / Output Devices',
+        meta: 'Examples, roles, and hardware interaction'
+      },
+      {
+        id: 'ram-rom-virtual',
+        title: 'RAM, ROM and Virtual Storage',
+        meta: 'Primary and secondary memory concepts'
+      },
+      {
+        id: 'operating-systems',
+        title: 'Operating Systems',
+        meta: 'Memory management, scheduling, security, file systems, and interfaces'
+      },
+      {
+        id: 'addressing-modes',
+        title: 'Modes of Addressing',
+        meta: 'Immediate, direct, indirect and indexed addressing'
+      },
+      {
+        id: 'programming-paradigms',
+        title: 'Programming Paradigms',
+        meta: 'Procedural, object-oriented, declarative, functional and more'
+      },
+      {
+        id: 'sdlc',
+        title: 'Software Development Lifecycle',
+        meta: 'Analysis, design, development, testing, deployment, maintenance'
+      }
+    ];
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    let state = loadState();
+
+    const topicsList = document.getElementById('topicsList');
+    const completedCount = document.getElementById('completedCount');
+    const remainingCount = document.getElementById('remainingCount');
+    const progressPercent = document.getElementById('progressPercent');
+    const searchInput = document.getElementById('searchInput');
+    const filterSelect = document.getElementById('filterSelect');
+    const clearBtn = document.getElementById('clearBtn');
+    const markAllBtn = document.getElementById('markAllBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+
+    function isDone(id) {
+      return Boolean(state[id]);
+    }
+
+    function render() {
+      const query = searchInput.value.trim().toLowerCase();
+      const filter = filterSelect.value;
+
+      const filteredTopics = topics.filter(topic => {
+        const matchesSearch =
+          topic.title.toLowerCase().includes(query) ||
+          topic.meta.toLowerCase().includes(query);
+
+        const done = isDone(topic.id);
+        const matchesFilter =
+          filter === 'all' ||
+          (filter === 'done' && done) ||
+          (filter === 'todo' && !done);
+
+        return matchesSearch && matchesFilter;
+      });
+
+      topicsList.innerHTML = '';
+
+      if (filteredTopics.length === 0) {
+        topicsList.innerHTML = '<div class="empty-state">No topics match your current search or filter.</div>';
+      } else {
+        filteredTopics.forEach(topic => {
+          const done = isDone(topic.id);
+          const card = document.createElement('article');
+          card.className = `topic-card ${done ? 'done' : ''}`;
+
+          card.innerHTML = `
+            <input class="checkbox" type="checkbox" ${done ? 'checked' : ''} aria-label="Mark ${topic.title} as complete" />
+            <div>
+              <div class="topic-title">${topic.title}</div>
+              <div class="topic-meta">${topic.meta}</div>
+            </div>
+            <div class="status-pill">${done ? 'Completed' : 'To do'}</div>
+          `;
+
+          const checkbox = card.querySelector('.checkbox');
+          checkbox.addEventListener('change', () => {
+            state[topic.id] = checkbox.checked;
+            saveState(state);
+            updateStats();
+            render();
+          });
+
+          topicsList.appendChild(card);
+        });
+      }
+
+      updateStats();
+    }
+
+    function updateStats() {
+      const completed = topics.filter(topic => isDone(topic.id)).length;
+      const remaining = topics.length - completed;
+      const percent = Math.round((completed / topics.length) * 100);
+
+      completedCount.textContent = completed;
+      remainingCount.textContent = remaining;
+      progressPercent.textContent = `${percent}%`;
+    }
+
+    searchInput.addEventListener('input', render);
+    filterSelect.addEventListener('change', render);
+
+    clearBtn.addEventListener('click', () => {
+      if (!confirm('Are you sure you want to reset all ticks?')) return;
+      state = {};
+      saveState(state);
+      render();
+    });
+
+    markAllBtn.addEventListener('click', () => {
+      topics.forEach(topic => {
+        state[topic.id] = true;
+      });
+      saveState(state);
+      render();
+    });
+
+    exportBtn.addEventListener('click', () => {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        state
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cs-revision-progress.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    importBtn.addEventListener('click', () => importFile.click());
+
+    importFile.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        if (!parsed.state || typeof parsed.state !== 'object') {
+          throw new Error('Invalid file format');
+        }
+        state = parsed.state;
+        saveState(state);
+        render();
+        alert('Progress imported successfully.');
+      } catch (error) {
+        alert('Could not import that file. Make sure it is a valid exported progress file.');
+      }
+
+      event.target.value = '';
+    });
+
+    render();
+  </script>
+</body>
+</html>
