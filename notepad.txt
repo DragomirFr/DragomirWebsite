@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notepad</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #f5f5f0;
+    --surface: #ffffff;
+    --menubar: #f0ede8;
+    --border: #d4d0c8;
+    --border-light: #e8e4dc;
+    --text: #1a1a18;
+    --text-muted: #5a5a54;
+    --accent: #2d6b9e;
+    --accent-hover: #235688;
+    --statusbar: #e8e4dc;
+    --selection: #c8ddf0;
+    --menu-hover: #d8dce8;
+    --dropdown-bg: #f8f6f2;
+    --dropdown-border: #c8c4bc;
+    --tab-active: #ffffff;
+    --tab-inactive: #e4e0d8;
+    --font-mono: 'Courier New', 'Lucida Console', monospace;
+    --font-ui: 'Segoe UI', 'Tahoma', 'Geneva', sans-serif;
+    --shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  [data-theme="dark"] {
+    --bg: #1e1e1e;
+    --surface: #252526;
+    --menubar: #2d2d2d;
+    --border: #3e3e42;
+    --border-light: #3a3a3a;
+    --text: #d4d4d4;
+    --text-muted: #858585;
+    --accent: #4e9de0;
+    --accent-hover: #6cb4f0;
+    --statusbar: #007acc;
+    --selection: #264f78;
+    --menu-hover: #3a3d41;
+    --dropdown-bg: #2d2d30;
+    --dropdown-border: #454545;
+    --tab-active: #1e1e1e;
+    --tab-inactive: #2d2d2d;
+    --shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  body {
+    font-family: var(--font-ui);
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 13px;
+  }
+
+  /* TITLE BAR */
+  #titlebar {
+    background: var(--menubar);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  #app-title {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+    letter-spacing: 0.3px;
+  }
+
+  /* MENU BAR */
+  #menubar {
+    display: flex;
+    gap: 2px;
+  }
+
+  .menu-btn {
+    background: none;
+    border: none;
+    padding: 4px 10px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 3px 3px 0 0;
+    position: relative;
+  }
+
+  .menu-btn:hover, .menu-btn.active {
+    background: var(--menu-hover);
+  }
+
+  /* DROPDOWNS */
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 0;
+    background: var(--dropdown-bg);
+    border: 1px solid var(--dropdown-border);
+    box-shadow: var(--shadow);
+    min-width: 200px;
+    z-index: 1000;
+    display: none;
+    border-radius: 0 3px 3px 3px;
+    padding: 4px 0;
+  }
+
+  .dropdown.open { display: block; }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    gap: 24px;
+    font-size: 13px;
+  }
+
+  .menu-item:hover { background: var(--accent); color: white; }
+  .menu-item.disabled { color: var(--text-muted); cursor: default; }
+  .menu-item.disabled:hover { background: none; color: var(--text-muted); }
+
+  .menu-shortcut {
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .menu-item:hover .menu-shortcut { color: rgba(255,255,255,0.75); }
+
+  .menu-separator {
+    height: 1px;
+    background: var(--dropdown-border);
+    margin: 4px 0;
+  }
+
+  /* TABS */
+  #tabbar {
+    display: flex;
+    background: var(--tab-inactive);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    flex-shrink: 0;
+    scrollbar-width: thin;
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-right: 1px solid var(--border);
+    cursor: pointer;
+    white-space: nowrap;
+    background: var(--tab-inactive);
+    font-size: 12px;
+    color: var(--text-muted);
+    min-width: 0;
+    max-width: 160px;
+    position: relative;
+    user-select: none;
+  }
+
+  .tab.active {
+    background: var(--tab-active);
+    color: var(--text);
+    border-bottom: 2px solid var(--accent);
+  }
+
+  .tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tab-modified { color: var(--accent); font-size: 10px; }
+
+  .tab-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: 0 2px;
+    line-height: 1;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+  }
+
+  .tab-close:hover { background: var(--menu-hover); color: var(--text); }
+
+  #new-tab-btn {
+    padding: 6px 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  #new-tab-btn:hover { color: var(--text); background: var(--menu-hover); }
+
+  /* TOOLBAR */
+  #toolbar {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    gap: 2px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-btn {
+    background: none;
+    border: 1px solid transparent;
+    padding: 3px 7px;
+    font: var(--font-ui);
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    color: var(--text);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .toolbar-btn:hover { background: var(--menu-hover); border-color: var(--border); }
+  .toolbar-btn:active { background: var(--border); }
+  .toolbar-btn.active { background: var(--selection); border-color: var(--accent); }
+
+  .toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+
+  #font-family {
+    font: inherit;
+    font-size: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 2px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    max-width: 130px;
+  }
+
+  #font-size {
+    font: inherit;
+    font-size: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 2px 4px;
+    border-radius: 3px;
+    width: 50px;
+    text-align: center;
+  }
+
+  /* FIND/REPLACE BAR */
+  #findbar {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--menubar);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  #findbar.open { display: flex; }
+
+  #findbar input {
+    font: inherit;
+    font-size: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 8px;
+    border-radius: 3px;
+    width: 160px;
+  }
+
+  #findbar input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+  .find-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 10px;
+    border-radius: 3px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .find-btn:hover { background: var(--menu-hover); }
+
+  #find-count { font-size: 12px; color: var(--text-muted); }
+
+  /* EDITOR */
+  #editor-wrapper {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  #line-numbers {
+    background: var(--menubar);
+    color: var(--text-muted);
+    font: 14px var(--font-mono);
+    padding: 8px 0;
+    text-align: right;
+    min-width: 48px;
+    border-right: 1px solid var(--border-light);
+    overflow: hidden;
+    user-select: none;
+    line-height: 1.6;
+    flex-shrink: 0;
+  }
+
+  .line-num {
+    padding: 0 10px 0 8px;
+    display: block;
+  }
+
+  #editor {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-family: var(--font-mono);
+    background: var(--surface);
+    color: var(--text);
+    line-height: 1.6;
+    tab-size: 4;
+    caret-color: var(--accent);
+    overflow-y: auto;
+    overflow-x: auto;
+    white-space: pre;
+    spellcheck: false;
+  }
+
+  #editor::selection { background: var(--selection); }
+
+  /* STATUS BAR */
+  #statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 12px;
+    background: var(--statusbar);
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    gap: 16px;
+    user-select: none;
+  }
+
+  [data-theme="dark"] #statusbar { color: rgba(255,255,255,0.75); }
+
+  .status-group { display: flex; gap: 16px; }
+
+  /* MODAL */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--dropdown-bg);
+    border: 1px solid var(--dropdown-border);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    border-radius: 6px;
+    padding: 24px;
+    min-width: 320px;
+    max-width: 480px;
+  }
+
+  .modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+  .modal label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+
+  .modal input, .modal select, .modal textarea {
+    width: 100%;
+    font: inherit;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .modal-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+  .modal-btn {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 4px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .modal-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .modal-btn:hover { filter: brightness(1.1); }
+
+  /* CONTEXT MENU */
+  #context-menu {
+    display: none;
+    position: fixed;
+    background: var(--dropdown-bg);
+    border: 1px solid var(--dropdown-border);
+    box-shadow: var(--shadow);
+    z-index: 3000;
+    border-radius: 4px;
+    padding: 4px 0;
+    min-width: 150px;
+  }
+
+  #context-menu.open { display: block; }
+</style>
+</head>
+<body>
+
+<div id="titlebar">
+  <div id="app-title">Notepad</div>
+  <div id="menubar">
+    <button class="menu-btn" data-menu="file">File
+      <div class="dropdown" id="menu-file">
+        <div class="menu-item" onclick="newTab()"><span>New</span><span class="menu-shortcut">Ctrl+N</span></div>
+        <div class="menu-item" onclick="openFile()"><span>Open…</span><span class="menu-shortcut">Ctrl+O</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="saveFile()"><span>Save</span><span class="menu-shortcut">Ctrl+S</span></div>
+        <div class="menu-item" onclick="saveAs()"><span>Save As…</span><span class="menu-shortcut">Ctrl+Shift+S</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="printFile()"><span>Print…</span><span class="menu-shortcut">Ctrl+P</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="closeTab()"><span>Close Tab</span><span class="menu-shortcut">Ctrl+W</span></div>
+      </div>
+    </button>
+    <button class="menu-btn" data-menu="edit">Edit
+      <div class="dropdown" id="menu-edit">
+        <div class="menu-item" onclick="doUndo()"><span>Undo</span><span class="menu-shortcut">Ctrl+Z</span></div>
+        <div class="menu-item" onclick="doRedo()"><span>Redo</span><span class="menu-shortcut">Ctrl+Y</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="doCut()"><span>Cut</span><span class="menu-shortcut">Ctrl+X</span></div>
+        <div class="menu-item" onclick="doCopy()"><span>Copy</span><span class="menu-shortcut">Ctrl+C</span></div>
+        <div class="menu-item" onclick="doPaste()"><span>Paste</span><span class="menu-shortcut">Ctrl+V</span></div>
+        <div class="menu-item" onclick="doSelectAll()"><span>Select All</span><span class="menu-shortcut">Ctrl+A</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="openFind()"><span>Find…</span><span class="menu-shortcut">Ctrl+F</span></div>
+        <div class="menu-item" onclick="openReplace()"><span>Replace…</span><span class="menu-shortcut">Ctrl+H</span></div>
+        <div class="menu-item" onclick="goToLine()"><span>Go to Line…</span><span class="menu-shortcut">Ctrl+G</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="insertDateTime()"><span>Insert Date/Time</span><span class="menu-shortcut">F5</span></div>
+        <div class="menu-item" onclick="insertTab()"><span>Insert Tab</span><span class="menu-shortcut">Tab</span></div>
+      </div>
+    </button>
+    <button class="menu-btn" data-menu="format">Format
+      <div class="dropdown" id="menu-format">
+        <div class="menu-item" onclick="toggleWordWrap()"><span id="wordwrap-label">✓ Word Wrap</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="changeFont()"><span>Font…</span></div>
+        <div class="menu-item" onclick="showEncodingModal()"><span>Encoding…</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="transformUpper()"><span>UPPERCASE</span><span class="menu-shortcut">Ctrl+Shift+U</span></div>
+        <div class="menu-item" onclick="transformLower()"><span>lowercase</span><span class="menu-shortcut">Ctrl+Shift+L</span></div>
+        <div class="menu-item" onclick="trimLines()"><span>Trim Whitespace</span></div>
+        <div class="menu-item" onclick="sortLines()"><span>Sort Lines A→Z</span></div>
+        <div class="menu-item" onclick="removeDuplicates()"><span>Remove Duplicates</span></div>
+      </div>
+    </button>
+    <button class="menu-btn" data-menu="view">View
+      <div class="dropdown" id="menu-view">
+        <div class="menu-item" onclick="toggleLineNumbers()"><span id="linenums-label">✓ Line Numbers</span></div>
+        <div class="menu-item" onclick="toggleStatusBar()"><span id="statusbar-label">✓ Status Bar</span></div>
+        <div class="menu-item" onclick="toggleToolbar()"><span id="toolbar-label">✓ Toolbar</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="toggleDark()"><span id="dark-label">Dark Mode</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="zoomIn()"><span>Zoom In</span><span class="menu-shortcut">Ctrl++</span></div>
+        <div class="menu-item" onclick="zoomOut()"><span>Zoom Out</span><span class="menu-shortcut">Ctrl+-</span></div>
+        <div class="menu-item" onclick="zoomReset()"><span>Reset Zoom</span><span class="menu-shortcut">Ctrl+0</span></div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" onclick="getWordCount()"><span>Word Count</span></div>
+      </div>
+    </button>
+    <button class="menu-btn" data-menu="help">Help
+      <div class="dropdown" id="menu-help">
+        <div class="menu-item" onclick="showHelp()"><span>Keyboard Shortcuts</span><span class="menu-shortcut">F1</span></div>
+        <div class="menu-item" onclick="showAbout()"><span>About Notepad</span></div>
+      </div>
+    </button>
+  </div>
+</div>
+
+<div id="tabbar">
+  <div id="tabs"></div>
+  <button id="new-tab-btn" onclick="newTab()" title="New Tab">+</button>
+</div>
+
+<div id="toolbar">
+  <button class="toolbar-btn" onclick="newTab()" title="New (Ctrl+N)">📄 New</button>
+  <button class="toolbar-btn" onclick="openFile()" title="Open (Ctrl+O)">📂 Open</button>
+  <button class="toolbar-btn" onclick="saveFile()" title="Save (Ctrl+S)">💾 Save</button>
+  <div class="toolbar-sep"></div>
+  <button class="toolbar-btn" onclick="doCut()" title="Cut">✂️</button>
+  <button class="toolbar-btn" onclick="doCopy()" title="Copy">📋</button>
+  <button class="toolbar-btn" onclick="doPaste()" title="Paste">📌</button>
+  <div class="toolbar-sep"></div>
+  <button class="toolbar-btn" onclick="doUndo()" title="Undo (Ctrl+Z)">↩️</button>
+  <button class="toolbar-btn" onclick="doRedo()" title="Redo (Ctrl+Y)">↪️</button>
+  <div class="toolbar-sep"></div>
+  <button class="toolbar-btn" onclick="openFind()" title="Find (Ctrl+F)">🔍 Find</button>
+  <div class="toolbar-sep"></div>
+  <select id="font-family" title="Font Family" onchange="applyFont()">
+    <option value="'Courier New', monospace">Courier New</option>
+    <option value="'Lucida Console', monospace">Lucida Console</option>
+    <option value="Consolas, monospace">Consolas</option>
+    <option value="'Times New Roman', serif">Times New Roman</option>
+    <option value="Georgia, serif">Georgia</option>
+    <option value="Arial, sans-serif">Arial</option>
+    <option value="Verdana, sans-serif">Verdana</option>
+    <option value="Tahoma, sans-serif">Tahoma</option>
+  </select>
+  <input type="number" id="font-size" value="14" min="6" max="72" title="Font Size" onchange="applyFontSize()" />
+  <div class="toolbar-sep"></div>
+  <button class="toolbar-btn" onclick="transformBold()" title="Bold"><b>B</b></button>
+  <button class="toolbar-btn" onclick="insertDateTime()" title="Date/Time (F5)">🗓️</button>
+</div>
+
+<div id="findbar">
+  <span style="font-size:12px;font-weight:500;">Find:</span>
+  <input type="text" id="find-input" placeholder="Search…" oninput="updateFindHighlights()" onkeydown="findKeydown(event)" />
+  <button class="find-btn" onclick="findPrev()">◀</button>
+  <button class="find-btn" onclick="findNext()">▶</button>
+  <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+    <input type="checkbox" id="find-case" onchange="updateFindHighlights()" /> Case
+  </label>
+  <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+    <input type="checkbox" id="find-whole" onchange="updateFindHighlights()" /> Whole word
+  </label>
+  <span class="toolbar-sep"></span>
+  <span style="font-size:12px;font-weight:500;">Replace:</span>
+  <input type="text" id="replace-input" placeholder="Replace with…" />
+  <button class="find-btn" onclick="replaceOne()">Replace</button>
+  <button class="find-btn" onclick="replaceAll()">All</button>
+  <span id="find-count"></span>
+  <button class="find-btn" onclick="closeFindbar()" style="margin-left:auto;">✕</button>
+</div>
+
+<div id="editor-wrapper">
+  <div id="line-numbers"></div>
+  <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+</div>
+
+<div id="statusbar">
+  <div class="status-group">
+    <span id="status-position">Ln 1, Col 1</span>
+    <span id="status-selection"></span>
+  </div>
+  <div class="status-group">
+    <span id="status-words">0 words</span>
+    <span id="status-chars">0 chars</span>
+    <span id="status-encoding">UTF-8</span>
+    <span id="status-eol">CRLF</span>
+  </div>
+</div>
+
+<!-- Modal overlay -->
+<div id="modal-overlay">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- Context menu -->
+<div id="context-menu"></div>
+
+<input type="file" id="file-input" style="display:none" accept=".txt,.md,.csv,.json,.xml,.html,.js,.css,.log" multiple onchange="handleFileOpen(event)" />
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let tabs = [];
+let activeTabId = null;
+let tabCounter = 0;
+let wordWrap = true;
+let showLineNums = true;
+let showStatusBar = true;
+let showToolbarFlag = true;
+let darkMode = false;
+let currentFontSize = 14;
+let findMatches = [];
+let findIndex = -1;
+
+// ─── TAB MANAGEMENT ───────────────────────────────────────────────────────────
+function createTab(name = 'Untitled', content = '') {
+  const id = ++tabCounter;
+  tabs.push({ id, name, content, modified: false, encoding: 'UTF-8', eol: 'CRLF', savedContent: '' });
+  return id;
+}
+
+function newTab(content = '', name = 'Untitled') {
+  const id = createTab(name, content);
+  renderTabs();
+  switchTab(id);
+}
+
+function switchTab(id) {
+  if (activeTabId !== null) {
+    const current = tabs.find(t => t.id === activeTabId);
+    if (current) current.content = editor.value;
+  }
+  activeTabId = id;
+  const tab = tabs.find(t => t.id === id);
+  if (!tab) return;
+  editor.value = tab.content;
+  updateLineNumbers();
+  updateStatus();
+  renderTabs();
+  document.title = (tab.modified ? '● ' : '') + tab.name + ' — Notepad';
+}
+
+function closeTab(id) {
+  const idx = tabs.findIndex(t => t.id === id);
+  if (idx === -1) return;
+  const tab = tabs[idx];
+  if (tab.modified) {
+    if (!confirm(`Save changes to "${tab.name}" before closing?`)) {
+      // still close
+    }
+  }
+  tabs.splice(idx, 1);
+  if (tabs.length === 0) { newTab(); return; }
+  if (activeTabId === id) {
+    const nextIdx = Math.min(idx, tabs.length - 1);
+    switchTab(tabs[nextIdx].id);
+  } else {
+    renderTabs();
+  }
+}
+
+function renderTabs() {
+  const container = document.getElementById('tabs');
+  container.innerHTML = '';
+  tabs.forEach(tab => {
+    const el = document.createElement('div');
+    el.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
+    el.innerHTML = `<span class="tab-name">${escHtml(tab.name)}</span>${tab.modified ? '<span class="tab-modified">●</span>' : ''}<button class="tab-close" onclick="event.stopPropagation();closeTab(${tab.id})" title="Close">×</button>`;
+    el.onclick = () => switchTab(tab.id);
+    container.appendChild(el);
+  });
+}
+
+function markModified() {
+  const tab = tabs.find(t => t.id === activeTabId);
+  if (tab && !tab.modified) {
+    tab.modified = true;
+    renderTabs();
+    document.title = '● ' + tab.name + ' — Notepad';
+  }
+}
+
+// ─── EDITOR HELPERS ──────────────────────────────────────────────────────────
+const editor = document.getElementById('editor');
+const lineNumbers = document.getElementById('line-numbers');
+const statusbar = document.getElementById('statusbar');
+
+editor.addEventListener('input', () => {
+  markModified();
+  updateLineNumbers();
+  updateStatus();
+  if (document.getElementById('findbar').classList.contains('open')) updateFindHighlights();
+});
+
+editor.addEventListener('keydown', editorKeydown);
+editor.addEventListener('click', updateStatus);
+editor.addEventListener('keyup', updateStatus);
+editor.addEventListener('scroll', syncScroll);
+
+editor.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  showContextMenu(e.clientX, e.clientY);
+});
+
+function syncScroll() {
+  lineNumbers.scrollTop = editor.scrollTop;
+}
+
+function updateLineNumbers() {
+  const lines = editor.value.split('\n').length;
+  let html = '';
+  for (let i = 1; i <= lines; i++) html += `<span class="line-num">${i}</span>`;
+  lineNumbers.innerHTML = html;
+  lineNumbers.scrollTop = editor.scrollTop;
+}
+
+function updateStatus() {
+  const val = editor.value;
+  const pos = editor.selectionStart;
+  const before = val.substring(0, pos);
+  const lines = before.split('\n');
+  const ln = lines.length;
+  const col = lines[lines.length - 1].length + 1;
+  document.getElementById('status-position').textContent = `Ln ${ln}, Col ${col}`;
+
+  const selLen = editor.selectionEnd - editor.selectionStart;
+  document.getElementById('status-selection').textContent = selLen > 0 ? `${selLen} selected` : '';
+
+  const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+  document.getElementById('status-words').textContent = `${words} words`;
+  document.getElementById('status-chars').textContent = `${val.length} chars`;
+
+  const tab = tabs.find(t => t.id === activeTabId);
+  if (tab) {
+    document.getElementById('status-encoding').textContent = tab.encoding || 'UTF-8';
+    document.getElementById('status-eol').textContent = tab.eol || 'CRLF';
+  }
+}
+
+function editorKeydown(e) {
+  const isMac = navigator.platform.includes('Mac');
+  const ctrl = isMac ? e.metaKey : e.ctrlKey;
+
+  if (e.key === 'Tab' && !e.shiftKey) {
+    e.preventDefault();
+    insertAtCursor('    ');
+    return;
+  }
+  if (e.key === 'Tab' && e.shiftKey) {
+    e.preventDefault();
+    // dedent
+    const start = editor.selectionStart;
+    const before = editor.value.substring(0, start);
+    const lineStart = before.lastIndexOf('\n') + 1;
+    const lineContent = editor.value.substring(lineStart);
+    if (lineContent.startsWith('    ')) {
+      editor.value = editor.value.substring(0, lineStart) + lineContent.substring(4);
+      editor.selectionStart = editor.selectionEnd = Math.max(lineStart, start - 4);
+    }
+    return;
+  }
+  if (e.key === 'F5') { e.preventDefault(); insertDateTime(); }
+  if (e.key === 'F1') { e.preventDefault(); showHelp(); }
+  if (ctrl && e.key === 'f') { e.preventDefault(); openFind(); }
+  if (ctrl && e.key === 'h') { e.preventDefault(); openReplace(); }
+  if (ctrl && e.key === 'g') { e.preventDefault(); goToLine(); }
+  if (ctrl && e.key === 'n') { e.preventDefault(); newTab(); }
+  if (ctrl && e.key === 'w') { e.preventDefault(); closeTab(activeTabId); }
+  if (ctrl && e.key === 's') { e.preventDefault(); if (e.shiftKey) saveAs(); else saveFile(); }
+  if (ctrl && e.key === 'o') { e.preventDefault(); openFile(); }
+  if (ctrl && e.key === 'p') { e.preventDefault(); printFile(); }
+  if (ctrl && e.key === '=') { e.preventDefault(); zoomIn(); }
+  if (ctrl && e.key === '-') { e.preventDefault(); zoomOut(); }
+  if (ctrl && e.key === '0') { e.preventDefault(); zoomReset(); }
+  if (ctrl && e.shiftKey && e.key === 'U') { e.preventDefault(); transformUpper(); }
+  if (ctrl && e.shiftKey && e.key === 'L') { e.preventDefault(); transformLower(); }
+
+  // Auto-pair brackets
+  const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+  if (pairs[e.key] && !e.ctrlKey && !e.metaKey) {
+    const sel = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+    if (sel.length > 0) {
+      e.preventDefault();
+      const wrapped = e.key + sel + pairs[e.key];
+      insertAtCursor(wrapped);
+      return;
+    }
+  }
+
+  // Enter: auto-indent
+  if (e.key === 'Enter') {
+    const pos = editor.selectionStart;
+    const before = editor.value.substring(0, pos);
+    const lastLine = before.split('\n').pop();
+    const indent = lastLine.match(/^(\s*)/)[1];
+    if (indent) {
+      e.preventDefault();
+      insertAtCursor('\n' + indent);
+    }
+  }
+}
+
+function insertAtCursor(text) {
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  editor.value = editor.value.substring(0, start) + text + editor.value.substring(end);
+  editor.selectionStart = editor.selectionEnd = start + text.length;
+  editor.dispatchEvent(new Event('input'));
+}
+
+// ─── FILE OPS ────────────────────────────────────────────────────────────────
+function openFile() { document.getElementById('file-input').click(); }
+
+function handleFileOpen(e) {
+  Array.from(e.target.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => newTab(ev.target.result, file.name);
+    reader.readAsText(file);
+  });
+  e.target.value = '';
+}
+
+function saveFile() {
+  const tab = tabs.find(t => t.id === activeTabId);
+  if (!tab) return;
+  tab.content = editor.value;
+  const blob = new Blob([editor.value], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = tab.name; a.click();
+  URL.revokeObjectURL(url);
+  tab.modified = false;
+  tab.savedContent = editor.value;
+  renderTabs();
+  document.title = tab.name + ' — Notepad';
+}
+
+function saveAs() {
+  showModal(`
+    <h2>Save As</h2>
+    <label>Filename</label>
+    <input type="text" id="saveas-name" value="${escHtml(tabs.find(t=>t.id===activeTabId)?.name||'Untitled')}" />
+    <label>Format</label>
+    <select id="saveas-fmt">
+      <option>.txt</option><option>.md</option><option>.csv</option>
+      <option>.json</option><option>.html</option><option>.xml</option>
+      <option>.js</option><option>.css</option><option>.log</option>
+    </select>
+    <div class="modal-buttons">
+      <button class="modal-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="doSaveAs()">Save</button>
+    </div>
+  `);
+  setTimeout(() => document.getElementById('saveas-name')?.focus(), 50);
+}
+
+function doSaveAs() {
+  const name = document.getElementById('saveas-name').value.trim();
+  const fmt = document.getElementById('saveas-fmt').value;
+  if (!name) return;
+  const tab = tabs.find(t => t.id === activeTabId);
+  if (tab) { tab.name = name + (name.endsWith(fmt) ? '' : fmt); }
+  closeModal();
+  saveFile();
+}
+
+function printFile() { window.print(); }
+
+// ─── EDIT OPS ────────────────────────────────────────────────────────────────
+function doUndo() { editor.focus(); document.execCommand('undo'); }
+function doRedo() { editor.focus(); document.execCommand('redo'); }
+function doCut() { editor.focus(); document.execCommand('cut'); }
+function doCopy() { editor.focus(); document.execCommand('copy'); }
+function doPaste() { editor.focus(); document.execCommand('paste'); }
+function doSelectAll() { editor.focus(); editor.select(); }
+
+function insertDateTime() {
+  insertAtCursor(new Date().toLocaleString());
+}
+
+function goToLine() {
+  const max = editor.value.split('\n').length;
+  showModal(`
+    <h2>Go to Line</h2>
+    <label>Line number (1–${max})</label>
+    <input type="number" id="goto-line" min="1" max="${max}" value="1" />
+    <div class="modal-buttons">
+      <button class="modal-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="doGoToLine()">Go</button>
+    </div>
+  `);
+  setTimeout(() => { const el = document.getElementById('goto-line'); el?.focus(); el?.select(); }, 50);
+}
+
+function doGoToLine() {
+  const n = parseInt(document.getElementById('goto-line').value, 10);
+  closeModal();
+  const lines = editor.value.split('\n');
+  const target = Math.max(1, Math.min(n, lines.length));
+  let pos = 0;
+  for (let i = 0; i < target - 1; i++) pos += lines[i].length + 1;
+  editor.focus();
+  editor.selectionStart = editor.selectionEnd = pos;
+  updateStatus();
+}
+
+// ─── FIND / REPLACE ──────────────────────────────────────────────────────────
+function openFind() {
+  const fb = document.getElementById('findbar');
+  fb.classList.add('open');
+  document.getElementById('find-input').focus();
+  updateFindHighlights();
+}
+
+function openReplace() {
+  openFind();
+  document.getElementById('replace-input').focus();
+}
+
+function closeFindbar() {
+  document.getElementById('findbar').classList.remove('open');
+  findMatches = []; findIndex = -1;
+  document.getElementById('find-count').textContent = '';
+  editor.focus();
+}
+
+function updateFindHighlights() {
+  const query = document.getElementById('find-input').value;
+  const caseSens = document.getElementById('find-case').checked;
+  const whole = document.getElementById('find-whole').checked;
+  findMatches = [];
+  document.getElementById('find-count').textContent = '';
+  if (!query) return;
+  const text = editor.value;
+  const flags = caseSens ? 'g' : 'gi';
+  const pattern = whole ? `\\b${escRegex(query)}\\b` : escRegex(query);
+  let re;
+  try { re = new RegExp(pattern, flags); } catch { return; }
+  let m;
+  while ((m = re.exec(text)) !== null) findMatches.push(m.index);
+  document.getElementById('find-count').textContent =
+    findMatches.length ? `${Math.min(findIndex + 1, findMatches.length)} / ${findMatches.length}` : 'Not found';
+}
+
+function findNext() {
+  if (!findMatches.length) return;
+  findIndex = (findIndex + 1) % findMatches.length;
+  selectMatch();
+}
+
+function findPrev() {
+  if (!findMatches.length) return;
+  findIndex = (findIndex - 1 + findMatches.length) % findMatches.length;
+  selectMatch();
+}
+
+function selectMatch() {
+  const query = document.getElementById('find-input').value;
+  editor.focus();
+  editor.selectionStart = findMatches[findIndex];
+  editor.selectionEnd = findMatches[findIndex] + query.length;
+  document.getElementById('find-count').textContent = `${findIndex + 1} / ${findMatches.length}`;
+}
+
+function findKeydown(e) {
+  if (e.key === 'Enter') { e.shiftKey ? findPrev() : findNext(); }
+  if (e.key === 'Escape') closeFindbar();
+}
+
+function replaceOne() {
+  if (findIndex < 0 || !findMatches.length) { findNext(); return; }
+  const query = document.getElementById('find-input').value;
+  const rep = document.getElementById('replace-input').value;
+  const pos = findMatches[findIndex];
+  editor.value = editor.value.substring(0, pos) + rep + editor.value.substring(pos + query.length);
+  editor.dispatchEvent(new Event('input'));
+  updateFindHighlights();
+  findNext();
+}
+
+function replaceAll() {
+  const query = document.getElementById('find-input').value;
+  const rep = document.getElementById('replace-input').value;
+  const caseSens = document.getElementById('find-case').checked;
+  const whole = document.getElementById('find-whole').checked;
+  if (!query) return;
+  const flags = caseSens ? 'g' : 'gi';
+  const pattern = whole ? `\\b${escRegex(query)}\\b` : escRegex(query);
+  let re;
+  try { re = new RegExp(pattern, flags); } catch { return; }
+  const count = (editor.value.match(re) || []).length;
+  editor.value = editor.value.replace(re, rep);
+  editor.dispatchEvent(new Event('input'));
+  updateFindHighlights();
+  if (count) alert(`Replaced ${count} occurrence(s).`);
+}
+
+// ─── FORMAT OPS ──────────────────────────────────────────────────────────────
+function toggleWordWrap() {
+  wordWrap = !wordWrap;
+  editor.style.whiteSpace = wordWrap ? 'pre-wrap' : 'pre';
+  document.getElementById('wordwrap-label').textContent = (wordWrap ? '✓ ' : '  ') + 'Word Wrap';
+}
+
+function changeFont() {
+  showModal(`
+    <h2>Font Settings</h2>
+    <label>Font Family</label>
+    <select id="font-family-modal">
+      <option value="'Courier New', monospace">Courier New</option>
+      <option value="Consolas, monospace">Consolas</option>
+      <option value="'Lucida Console', monospace">Lucida Console</option>
+      <option value="'Times New Roman', serif">Times New Roman</option>
+      <option value="Georgia, serif">Georgia</option>
+      <option value="Arial, sans-serif">Arial</option>
+      <option value="Verdana, sans-serif">Verdana</option>
+    </select>
+    <label>Size (pt)</label>
+    <input type="number" id="font-size-modal" value="${currentFontSize}" min="6" max="72" />
+    <div class="modal-buttons">
+      <button class="modal-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="applyFontModal()">Apply</button>
+    </div>
+  `);
+}
+
+function applyFontModal() {
+  const fam = document.getElementById('font-family-modal').value;
+  const sz = document.getElementById('font-size-modal').value;
+  editor.style.fontFamily = fam;
+  currentFontSize = parseInt(sz);
+  editor.style.fontSize = sz + 'px';
+  lineNumbers.style.fontSize = sz + 'px';
+  document.getElementById('font-family').value = fam;
+  document.getElementById('font-size').value = sz;
+  closeModal();
+  updateLineNumbers();
+}
+
+function applyFont() {
+  editor.style.fontFamily = document.getElementById('font-family').value;
+}
+
+function applyFontSize() {
+  const sz = parseInt(document.getElementById('font-size').value);
+  if (sz >= 6 && sz <= 72) {
+    currentFontSize = sz;
+    editor.style.fontSize = sz + 'px';
+    lineNumbers.style.fontSize = sz + 'px';
+    updateLineNumbers();
+  }
+}
+
+function showEncodingModal() {
+  showModal(`
+    <h2>Encoding</h2>
+    <label>Encoding</label>
+    <select id="enc-select">
+      <option>UTF-8</option><option>UTF-16</option><option>ASCII</option><option>ISO-8859-1</option>
+    </select>
+    <label>Line Ending</label>
+    <select id="eol-select">
+      <option>CRLF (Windows)</option><option>LF (Unix)</option><option>CR (Classic Mac)</option>
+    </select>
+    <div class="modal-buttons">
+      <button class="modal-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="applyEncoding()">Apply</button>
+    </div>
+  `);
+}
+
+function applyEncoding() {
+  const tab = tabs.find(t => t.id === activeTabId);
+  if (tab) {
+    tab.encoding = document.getElementById('enc-select').value;
+    tab.eol = document.getElementById('eol-select').value.split(' ')[0];
+    document.getElementById('status-encoding').textContent = tab.encoding;
+    document.getElementById('status-eol').textContent = tab.eol;
+  }
+  closeModal();
+}
+
+function transformUpper() {
+  const s = editor.selectionStart, e = editor.selectionEnd;
+  if (s === e) return;
+  editor.value = editor.value.substring(0, s) + editor.value.substring(s, e).toUpperCase() + editor.value.substring(e);
+  editor.selectionStart = s; editor.selectionEnd = e;
+  markModified();
+}
+
+function transformLower() {
+  const s = editor.selectionStart, e = editor.selectionEnd;
+  if (s === e) return;
+  editor.value = editor.value.substring(0, s) + editor.value.substring(s, e).toLowerCase() + editor.value.substring(e);
+  editor.selectionStart = s; editor.selectionEnd = e;
+  markModified();
+}
+
+function transformBold() { insertAtCursor('**text**'); }
+
+function trimLines() {
+  editor.value = editor.value.split('\n').map(l => l.trimEnd()).join('\n');
+  editor.dispatchEvent(new Event('input'));
+}
+
+function sortLines() {
+  editor.value = editor.value.split('\n').sort((a, b) => a.localeCompare(b)).join('\n');
+  editor.dispatchEvent(new Event('input'));
+}
+
+function removeDuplicates() {
+  const lines = editor.value.split('\n');
+  const seen = new Set();
+  editor.value = lines.filter(l => { if (seen.has(l)) return false; seen.add(l); return true; }).join('\n');
+  editor.dispatchEvent(new Event('input'));
+}
+
+function insertTab() { insertAtCursor('    '); }
+
+// ─── VIEW ─────────────────────────────────────────────────────────────────────
+function toggleLineNumbers() {
+  showLineNums = !showLineNums;
+  lineNumbers.style.display = showLineNums ? '' : 'none';
+  document.getElementById('linenums-label').textContent = (showLineNums ? '✓ ' : '  ') + 'Line Numbers';
+}
+
+function toggleStatusBar() {
+  showStatusBar = !showStatusBar;
+  statusbar.style.display = showStatusBar ? '' : 'none';
+  document.getElementById('statusbar-label').textContent = (showStatusBar ? '✓ ' : '  ') + 'Status Bar';
+}
+
+function toggleToolbar() {
+  showToolbarFlag = !showToolbarFlag;
+  document.getElementById('toolbar').style.display = showToolbarFlag ? '' : 'none';
+  document.getElementById('toolbar-label').textContent = (showToolbarFlag ? '✓ ' : '  ') + 'Toolbar';
+}
+
+function toggleDark() {
+  darkMode = !darkMode;
+  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : '');
+  document.getElementById('dark-label').textContent = (darkMode ? '✓ ' : '') + 'Dark Mode';
+}
+
+function zoomIn() { currentFontSize = Math.min(currentFontSize + 1, 72); applyZoom(); }
+function zoomOut() { currentFontSize = Math.max(currentFontSize - 1, 6); applyZoom(); }
+function zoomReset() { currentFontSize = 14; applyZoom(); }
+
+function applyZoom() {
+  editor.style.fontSize = currentFontSize + 'px';
+  lineNumbers.style.fontSize = currentFontSize + 'px';
+  document.getElementById('font-size').value = currentFontSize;
+  updateLineNumbers();
+}
+
+function getWordCount() {
+  const text = editor.value;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const chars = text.length;
+  const lines = text.split('\n').length;
+  alert(`Words: ${words}\nCharacters: ${chars}\nLines: ${lines}`);
+}
+
+// ─── CONTEXT MENU ────────────────────────────────────────────────────────────
+function showContextMenu(x, y) {
+  const cm = document.getElementById('context-menu');
+  cm.innerHTML = [
+    ['Cut', 'doCut()'],
+    ['Copy', 'doCopy()'],
+    ['Paste', 'doPaste()'],
+    null,
+    ['Select All', 'doSelectAll()'],
+    null,
+    ['Find…', 'openFind()'],
+    ['Insert Date/Time', 'insertDateTime()'],
+    null,
+    ['UPPERCASE', 'transformUpper()'],
+    ['lowercase', 'transformLower()'],
+  ].map(item => item === null
+    ? '<div class="menu-separator"></div>'
+    : `<div class="menu-item" onclick="closeContextMenu();${item[1]}">${item[0]}</div>`
+  ).join('');
+  cm.style.left = x + 'px';
+  cm.style.top = y + 'px';
+  cm.classList.add('open');
+}
+
+function closeContextMenu() { document.getElementById('context-menu').classList.remove('open'); }
+document.addEventListener('click', closeContextMenu);
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+function showModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ─── MENU SYSTEM ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.menu-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isActive = btn.classList.contains('active');
+    closeAllMenus();
+    if (!isActive) {
+      btn.classList.add('active');
+      btn.querySelector('.dropdown').classList.add('open');
+    }
+  });
+});
+
+document.addEventListener('click', closeAllMenus);
+function closeAllMenus() {
+  document.querySelectorAll('.menu-btn.active').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+}
+
+// ─── HELP ────────────────────────────────────────────────────────────────────
+function showHelp() {
+  showModal(`
+    <h2>Keyboard Shortcuts</h2>
+    <table style="width:100%;font-size:12px;border-collapse:collapse;">
+      ${[
+        ['Ctrl+N','New Tab'], ['Ctrl+O','Open File'], ['Ctrl+S','Save'],
+        ['Ctrl+Shift+S','Save As'], ['Ctrl+W','Close Tab'], ['Ctrl+P','Print'],
+        ['Ctrl+F','Find'], ['Ctrl+H','Replace'], ['Ctrl+G','Go to Line'],
+        ['Ctrl+Z','Undo'], ['Ctrl+Y','Redo'], ['Ctrl+A','Select All'],
+        ['Ctrl+Shift+U','UPPERCASE'], ['Ctrl+Shift+L','lowercase'],
+        ['Ctrl++','Zoom In'], ['Ctrl+-','Zoom Out'], ['Ctrl+0','Reset Zoom'],
+        ['F5','Insert Date/Time'], ['F1','This help'], ['Tab','Indent 4 spaces'],
+        ['Shift+Tab','Dedent'],
+      ].map(([k,v]) => `<tr><td style="padding:3px 12px 3px 0;font-weight:500;font-family:monospace;white-space:nowrap;">${k}</td><td style="padding:3px 0;color:var(--text-muted)">${v}</td></tr>`).join('')}
+    </table>
+    <div class="modal-buttons" style="margin-top:16px;">
+      <button class="modal-btn primary" onclick="closeModal()">Close</button>
+    </div>
+  `);
+}
+
+function showAbout() {
+  showModal(`
+    <h2>About Notepad</h2>
+    <p style="font-size:13px;color:var(--text-muted);line-height:1.6;">A full-featured browser-based text editor.<br><br>Features: multi-tab editing, find & replace, font controls, word wrap, line numbers, dark mode, open & save files, word count, and more.</p>
+    <div class="modal-buttons" style="margin-top:16px;">
+      <button class="modal-btn primary" onclick="closeModal()">OK</button>
+    </div>
+  `);
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+newTab('', 'Untitled.txt');
+editor.focus();
+updateLineNumbers();
+updateStatus();
+
+// Prevent accidental close
+window.addEventListener('beforeunload', (e) => {
+  const hasModified = tabs.some(t => t.modified);
+  if (hasModified) { e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+</body>
+</html>
