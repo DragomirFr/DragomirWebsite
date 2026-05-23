@@ -15,6 +15,8 @@
     { "source": "/cityboy", "destination": "/cityboy.html" },
     { "source": "/dragomirfiles", "destination": "/dragomirfiles.html" },
     {"source": "/final", "destination": "/final.lua" },
-    {"source": "/revision", "destination": "/revision.html" }
+    {"source": "/revision", "destination": "/revision.html" },
+    {"source": "/notepad", "destination": "/notepad.html" }
+    
   ]
 }
