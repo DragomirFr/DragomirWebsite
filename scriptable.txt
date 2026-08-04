@@ -153,16 +153,35 @@ function resolvePerson() {
 // ---------------------------------------------------------------------------
 
 /**
+ * `base` with `params` appended as a query string.
+ *
+ * Built by hand rather than with `URL`/`URLSearchParams`: those are Web APIs
+ * supplied by browsers, and Scriptable runs on bare JavaScriptCore with no DOM,
+ * so referencing them throws before a request is ever made.
+ */
+function buildUrl(base, params) {
+  const parts = [];
+  for (const key of Object.keys(params)) {
+    const value = params[key];
+    if (value === null || value === undefined || value === "") continue;
+    parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+  }
+  if (parts.length === 0) return base;
+  return base + (base.indexOf("?") === -1 ? "?" : "&") + parts.join("&");
+}
+
+/**
  * Fetches today's numbers. Throws on any network, status or parse problem so
  * there's a single failure path for the caller to handle.
  */
 async function loadData() {
-  const url = new URL(API_URL);
-  url.searchParams.set("person", resolvePerson());
-  url.searchParams.set("tz", deviceTimeZone());
-  if (API_KEY) url.searchParams.set("key", API_KEY);
+  const url = buildUrl(API_URL, {
+    person: resolvePerson(),
+    tz: deviceTimeZone(),
+    key: API_KEY,
+  });
 
-  const req = new Request(url.toString());
+  const req = new Request(url);
   req.timeoutInterval = 10;
   req.headers = { accept: "application/json" };
 
@@ -473,8 +492,14 @@ function buildWidget(data) {
   return w;
 }
 
-/** Shown when the API can't be reached or answers with something unusable. */
-function buildErrorWidget(message) {
+/**
+ * Shown when the API can't be reached or answers with something unusable.
+ *
+ * `detail` is the underlying error, and is only ever passed when the script is
+ * run by hand inside the app — a home-screen widget shows the plain message.
+ * Diagnosing a widget you can't put a breakpoint in is otherwise guesswork.
+ */
+function buildErrorWidget(message, detail) {
   const w = baseWidget();
 
   w.addSpacer();
@@ -503,6 +528,16 @@ function buildErrorWidget(message) {
   text.lineLimit = 3;
   text.minimumScaleFactor = 0.85;
 
+  if (detail) {
+    center.addSpacer(8);
+    const hint = center.addText(String(detail));
+    hint.font = Font.systemFont(10);
+    hint.textColor = THEME.streak;
+    hint.centerAlignText();
+    hint.lineLimit = 4;
+    hint.minimumScaleFactor = 0.7;
+  }
+
   addFooter(w);
   return w;
 }
@@ -519,7 +554,12 @@ async function main() {
     widget = buildWidget(data);
   } catch (error) {
     console.error(`Widget failed: ${error}`);
-    widget = buildErrorWidget("Unable to load workout data.");
+    // The detail is suppressed on the home screen, where the brief message is
+    // all there's room for, and shown when run by hand so it can be debugged.
+    widget = buildErrorWidget(
+      "Unable to load workout data.",
+      config.runsInWidget ? null : String(error),
+    );
   }
 
   if (config.runsInWidget) {
