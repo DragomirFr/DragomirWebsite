@@ -40,7 +40,7 @@
 const API_URL = "https://www.dragomir.xyz/api/today";
 
 /** Must match the WORKOUT_API_KEY environment variable on the server. */
-const API_KEY = "";
+const API_KEY = "JAX1UhL-vITjMUitJqVb12T71rjsDzdg";
 
 /** Which athlete to show: "p2" (Dragomir) or "p1" (Abby). */
 const PERSON = "p2";
@@ -397,7 +397,7 @@ function addStreakAndMessage(w, model) {
   count.font = Font.boldSystemFont(22);
   count.textColor = THEME.streak;
 
-  const streakLabel = streakBlock.addText(model.streak === 1 ? "day streak" : "day streak");
+  const streakLabel = streakBlock.addText("day streak");
   streakLabel.font = Font.systemFont(10);
   streakLabel.textColor = THEME.textDim;
 
