@@ -1,0 +1,535 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Comments below change nothing.
+// icon-color: red; icon-glyph: dumbbell;
+//
+// ============================================================================
+// Today's Workout — a large widget for the iOS Scriptable app
+// ============================================================================
+//
+// Shows today's steps, push-ups and leg raises against their goals, with a
+// coloured progress bar for each, the current streak, and a motivational line.
+//
+// SETUP
+//   1. Scriptable → + → paste this whole file.
+//   2. Set API_KEY in the CONFIG block below to the same value as the
+//      WORKOUT_API_KEY environment variable on the server. Nothing else needs
+//      to change.
+//   3. Long-press the home screen → add a Scriptable widget → size Large →
+//      choose this script. Optionally set the widget's "Parameter" field to
+//      `p1` or `p2` to pick the athlete for that specific widget.
+//
+// ON ANIMATION
+//   iOS home-screen widgets are static snapshots rendered by WidgetKit. Neither
+//   Scriptable nor any other widget can animate them — there is no render loop
+//   to animate in, and `presentLarge()` is a still image too. So the "smooth"
+//   part here is visual rather than moving: a gradient background, rounded
+//   geometry, and bars whose fills are drawn at sub-pixel precision. The widget
+//   refreshes itself roughly every 15 minutes, which is the closest thing to
+//   motion the platform offers.
+//
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// CONFIG — the only part you need to edit
+// ---------------------------------------------------------------------------
+
+/**
+ * Your endpoint. Use the canonical host — dragomir.xyz 308-redirects to www,
+ * and there's no reason to make every refresh pay for the extra hop.
+ */
+const API_URL = "https://www.dragomir.xyz/api/today";
+
+/** Must match the WORKOUT_API_KEY environment variable on the server. */
+const API_KEY = "";
+
+/** Which athlete to show: "p2" (Dragomir) or "p1" (Abby). */
+const PERSON = "p2";
+
+/** Tap the widget to open this. Leave "" to do nothing on tap. */
+const TAP_URL = "https://www.dragomir.xyz";
+
+/** How long before iOS is asked to refresh again. It treats this as a hint. */
+const REFRESH_MINUTES = 15;
+
+// ---------------------------------------------------------------------------
+// Design tokens — Apple Fitness-flavoured dark theme
+// ---------------------------------------------------------------------------
+
+const THEME = {
+  bg: new Color("#111111"),
+  bgGradientTo: new Color("#1C1C1E"),
+  card: new Color("#1C1C1E"),
+  track: new Color("#2C2C2E"),
+  text: Color.white(),
+  textDim: new Color("#8E8E93"),
+  streak: new Color("#FF9F0A"),
+  success: new Color("#30D158"),
+};
+
+/** One entry per exercise, in display order. Colours are Apple's dark palette. */
+const EXERCISES = [
+  {
+    key: "steps",
+    goalKey: "stepsGoal",
+    label: "Steps",
+    icon: "🚶",
+    color: "#0A84FF",
+    unit: "steps",
+  },
+  {
+    key: "pushups",
+    goalKey: "pushupsGoal",
+    label: "Push-ups",
+    icon: "💪",
+    color: "#30D158",
+    unit: "reps",
+  },
+  {
+    key: "legRaises",
+    goalKey: "legRaisesGoal",
+    label: "Leg Raises",
+    icon: "🦵",
+    color: "#FF9F0A",
+    unit: "reps",
+  },
+];
+
+/** Fallback goals, used only if the API omits them. Matches the app defaults. */
+const FALLBACK_GOALS = { stepsGoal: 10000, pushupsGoal: 100, legRaisesGoal: 60 };
+
+// ---------------------------------------------------------------------------
+// Small helpers
+// ---------------------------------------------------------------------------
+
+/** A non-negative integer, whatever the API sent. Guards against null/NaN. */
+function safeNum(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : fallback;
+}
+
+/** Percent complete, clamped to 0–100. A zero goal counts as done. */
+function pct(value, goal) {
+  if (!goal || goal <= 0) return 100;
+  return Math.max(0, Math.min(100, (value / goal) * 100));
+}
+
+/** 8423 → "8,423" */
+function fmt(n) {
+  return safeNum(n).toLocaleString("en-US");
+}
+
+/** Message keyed off overall progress. */
+function motivation(overall, allComplete) {
+  if (allComplete || overall >= 100) return "Goals completed! 🎉";
+  if (overall >= 67) return "Almost there!";
+  if (overall >= 34) return "Keep going!";
+  return "Great start!";
+}
+
+/** Local wall-clock time as HH:mm. */
+function nowHHmm() {
+  const df = new DateFormatter();
+  df.dateFormat = "HH:mm";
+  return df.string(new Date());
+}
+
+/** The IANA zone of this device, so the server can resolve "today" correctly. */
+function deviceTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch (e) {
+    return "UTC";
+  }
+}
+
+/** "p1"/"p2" from the widget's Parameter field, else the PERSON constant. */
+function resolvePerson() {
+  const p = (args.widgetParameter || "").trim();
+  return p === "p1" || p === "p2" ? p : PERSON;
+}
+
+// ---------------------------------------------------------------------------
+// Data
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetches today's numbers. Throws on any network, status or parse problem so
+ * there's a single failure path for the caller to handle.
+ */
+async function loadData() {
+  const url = new URL(API_URL);
+  url.searchParams.set("person", resolvePerson());
+  url.searchParams.set("tz", deviceTimeZone());
+  if (API_KEY) url.searchParams.set("key", API_KEY);
+
+  const req = new Request(url.toString());
+  req.timeoutInterval = 10;
+  req.headers = { accept: "application/json" };
+
+  const data = await req.loadJSON();
+
+  // loadJSON resolves for error responses too, so check the status ourselves.
+  const status = req.response ? req.response.statusCode : 200;
+  if (status < 200 || status >= 300) {
+    throw new Error(`HTTP ${status}`);
+  }
+  if (!data || typeof data !== "object") {
+    throw new Error("Malformed response");
+  }
+  return data;
+}
+
+/** Normalises the payload into what the view needs, tolerating missing fields. */
+function toViewModel(data) {
+  const rows = EXERCISES.map((ex) => {
+    const value = safeNum(data[ex.key]);
+    const goal = safeNum(data[ex.goalKey], FALLBACK_GOALS[ex.goalKey]);
+    const percent = pct(value, goal);
+    return {
+      ...ex,
+      value,
+      goal,
+      percent,
+      done: value >= goal,
+      remaining: Math.max(0, goal - value),
+    };
+  });
+
+  const overall = rows.reduce((sum, r) => sum + r.percent, 0) / rows.length;
+  const allComplete = rows.every((r) => r.done);
+
+  return {
+    rows,
+    overall,
+    allComplete,
+    streak: safeNum(data.streak),
+    name: typeof data.name === "string" ? data.name : "",
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Drawing
+// ---------------------------------------------------------------------------
+
+/**
+ * A rounded progress bar as an image.
+ *
+ * Drawn rather than stacked because a Scriptable stack can't clip a child to a
+ * corner radius reliably at these sizes — the fill would poke out of the track.
+ */
+function progressBar(percent, hex, width = 300, height = 10) {
+  const dc = new DrawContext();
+  dc.size = new Size(width, height);
+  dc.opaque = false;
+  dc.respectScreenScale = true;
+
+  const radius = height / 2;
+
+  // Track.
+  const track = new Path();
+  track.addRoundedRect(new Rect(0, 0, width, height), radius, radius);
+  dc.addPath(track);
+  dc.setFillColor(THEME.track);
+  dc.fillPath();
+
+  // Fill. Kept at least as wide as it is tall so a tiny value still shows as a
+  // dot instead of a sliver, and never wider than the track.
+  const raw = (Math.max(0, Math.min(100, percent)) / 100) * width;
+  if (raw > 0) {
+    const fillWidth = Math.min(width, Math.max(height, raw));
+    const fill = new Path();
+    fill.addRoundedRect(new Rect(0, 0, fillWidth, height), radius, radius);
+    dc.addPath(fill);
+    dc.setFillColor(new Color(hex));
+    dc.fillPath();
+  }
+
+  return dc.getImage();
+}
+
+/**
+ * A circular progress ring with the percentage in the middle.
+ *
+ * DrawContext has no arc primitive, so the arc is a stroked path sampled at one
+ * point per degree — smooth enough at this size.
+ */
+function ring(percent, hex, size = 54, lineWidth = 6) {
+  const dc = new DrawContext();
+  dc.size = new Size(size, size);
+  dc.opaque = false;
+  dc.respectScreenScale = true;
+
+  const center = size / 2;
+  const radius = center - lineWidth / 2;
+  const clamped = Math.max(0, Math.min(100, percent));
+
+  // Track ring.
+  dc.setLineWidth(lineWidth);
+  dc.setStrokeColor(THEME.track);
+  dc.strokeEllipse(new Rect(lineWidth / 2, lineWidth / 2, size - lineWidth, size - lineWidth));
+
+  // Progress arc, starting at 12 o'clock and sweeping clockwise.
+  const sweep = Math.round((clamped / 100) * 360);
+  if (sweep > 0) {
+    const path = new Path();
+    for (let deg = 0; deg <= sweep; deg++) {
+      const rad = (deg - 90) * (Math.PI / 180);
+      const point = new Point(center + radius * Math.cos(rad), center + radius * Math.sin(rad));
+      if (deg === 0) path.move(point);
+      else path.addLine(point);
+    }
+    dc.addPath(path);
+    dc.setStrokeColor(new Color(hex));
+    dc.setLineWidth(lineWidth);
+    dc.strokePath();
+  }
+
+  // Centre label.
+  dc.setFont(Font.boldSystemFont(15));
+  dc.setTextColor(THEME.text);
+  dc.setTextAlignedCenter();
+  dc.drawTextInRect(`${Math.round(clamped)}%`, new Rect(0, center - 11, size, 22));
+
+  return dc.getImage();
+}
+
+// ---------------------------------------------------------------------------
+// View
+// ---------------------------------------------------------------------------
+
+/** Shared chrome: background gradient, padding, tap target, refresh hint. */
+function baseWidget() {
+  const w = new ListWidget();
+
+  const gradient = new LinearGradient();
+  gradient.colors = [THEME.bg, THEME.bgGradientTo];
+  gradient.locations = [0, 1];
+  w.backgroundGradient = gradient;
+  w.backgroundColor = THEME.bg;
+
+  w.setPadding(16, 16, 14, 16);
+  w.refreshAfterDate = new Date(Date.now() + REFRESH_MINUTES * 60 * 1000);
+  if (TAP_URL) w.url = TAP_URL;
+
+  return w;
+}
+
+/** Adds "Last Updated: HH:mm", pinned to the bottom. */
+function addFooter(w) {
+  w.addSpacer();
+  const footer = w.addText(`Last Updated: ${nowHHmm()}`);
+  footer.font = Font.systemFont(10);
+  footer.textColor = THEME.textDim;
+  footer.centerAlignText();
+}
+
+/** One exercise: title row, bar, then percentage and what's left. */
+function exerciseRow(w, row) {
+  const container = w.addStack();
+  container.layoutVertically();
+  container.spacing = 5;
+
+  // Title row: icon, label, ✅ when done, value / goal on the right.
+  const head = container.addStack();
+  head.layoutHorizontally();
+  head.centerAlignContent();
+  head.spacing = 5;
+
+  const icon = head.addText(row.icon);
+  icon.font = Font.systemFont(13);
+
+  const label = head.addText(row.label);
+  label.font = Font.semiboldSystemFont(13);
+  label.textColor = THEME.text;
+
+  if (row.done) {
+    const check = head.addText("✅");
+    check.font = Font.systemFont(11);
+  }
+
+  head.addSpacer();
+
+  const value = head.addText(`${fmt(row.value)} / ${fmt(row.goal)}`);
+  value.font = Font.mediumSystemFont(12);
+  value.textColor = THEME.textDim;
+
+  // Bar.
+  const bar = container.addImage(progressBar(row.percent, row.color));
+  bar.imageSize = new Size(300, 10);
+  bar.applyFittingContentMode();
+
+  // Percentage + remaining.
+  const meta = container.addStack();
+  meta.layoutHorizontally();
+
+  const percentText = meta.addText(`${Math.round(row.percent)}%`);
+  percentText.font = Font.semiboldSystemFont(11);
+  percentText.textColor = new Color(row.color);
+
+  meta.addSpacer();
+
+  const remaining = meta.addText(
+    row.done ? "Goal reached" : `${fmt(row.remaining)} ${row.unit} to go`,
+  );
+  remaining.font = Font.systemFont(11);
+  remaining.textColor = THEME.textDim;
+}
+
+/** The streak badge and motivational line, side by side. */
+function addStreakAndMessage(w, model) {
+  const strip = w.addStack();
+  strip.layoutHorizontally();
+  strip.centerAlignContent();
+  strip.backgroundColor = THEME.card;
+  strip.cornerRadius = 14;
+  strip.setPadding(10, 12, 10, 12);
+
+  const flame = strip.addText("🔥");
+  flame.font = Font.systemFont(22);
+
+  strip.addSpacer(8);
+
+  const streakBlock = strip.addStack();
+  streakBlock.layoutVertically();
+  streakBlock.spacing = 1;
+
+  const count = streakBlock.addText(String(model.streak));
+  count.font = Font.boldSystemFont(22);
+  count.textColor = THEME.streak;
+
+  const streakLabel = streakBlock.addText(model.streak === 1 ? "day streak" : "day streak");
+  streakLabel.font = Font.systemFont(10);
+  streakLabel.textColor = THEME.textDim;
+
+  strip.addSpacer();
+
+  const message = strip.addText(motivation(model.overall, model.allComplete));
+  message.font = Font.semiboldSystemFont(13);
+  message.textColor = model.allComplete ? THEME.success : THEME.text;
+  message.rightAlignText();
+  message.lineLimit = 2;
+  message.minimumScaleFactor = 0.8;
+}
+
+/** The full widget for a successful fetch. */
+function buildWidget(data) {
+  const model = toViewModel(data);
+  const w = baseWidget();
+
+  // Header: title (+ trophy) and subtitle on the left, overall ring on the right.
+  const header = w.addStack();
+  header.layoutHorizontally();
+  header.centerAlignContent();
+
+  const titleBlock = header.addStack();
+  titleBlock.layoutVertically();
+  titleBlock.spacing = 2;
+
+  const titleRow = titleBlock.addStack();
+  titleRow.layoutHorizontally();
+  titleRow.centerAlignContent();
+  titleRow.spacing = 5;
+
+  const title = titleRow.addText("Today's Workout");
+  title.font = Font.boldSystemFont(19);
+  title.textColor = THEME.text;
+  title.lineLimit = 1;
+  title.minimumScaleFactor = 0.8;
+
+  // Bonus: trophy once every goal is met.
+  if (model.allComplete) {
+    const trophy = titleRow.addText("🏆");
+    trophy.font = Font.systemFont(17);
+  }
+
+  const df = new DateFormatter();
+  df.dateFormat = "EEEE d MMMM";
+  const subtitle = titleBlock.addText(
+    model.name ? `${model.name} · ${df.string(new Date())}` : df.string(new Date()),
+  );
+  subtitle.font = Font.systemFont(11);
+  subtitle.textColor = THEME.textDim;
+  subtitle.lineLimit = 1;
+
+  header.addSpacer();
+
+  const overallRing = header.addImage(
+    ring(model.overall, model.allComplete ? "#30D158" : "#0A84FF"),
+  );
+  overallRing.imageSize = new Size(54, 54);
+
+  w.addSpacer(14);
+
+  // Three exercises.
+  model.rows.forEach((row, i) => {
+    if (i > 0) w.addSpacer(11);
+    exerciseRow(w, row);
+  });
+
+  w.addSpacer(13);
+  addStreakAndMessage(w, model);
+  addFooter(w);
+
+  return w;
+}
+
+/** Shown when the API can't be reached or answers with something unusable. */
+function buildErrorWidget(message) {
+  const w = baseWidget();
+
+  w.addSpacer();
+
+  const center = w.addStack();
+  center.layoutVertically();
+  center.centerAlignContent();
+
+  const title = center.addText("Today's Workout");
+  title.font = Font.boldSystemFont(19);
+  title.textColor = THEME.text;
+  title.centerAlignText();
+
+  center.addSpacer(10);
+
+  const icon = center.addText("⚠️");
+  icon.font = Font.systemFont(28);
+  icon.centerAlignText();
+
+  center.addSpacer(8);
+
+  const text = center.addText(message);
+  text.font = Font.mediumSystemFont(14);
+  text.textColor = THEME.textDim;
+  text.centerAlignText();
+  text.lineLimit = 3;
+  text.minimumScaleFactor = 0.85;
+
+  addFooter(w);
+  return w;
+}
+
+// ---------------------------------------------------------------------------
+// Entry point
+// ---------------------------------------------------------------------------
+
+async function main() {
+  let widget;
+
+  try {
+    const data = await loadData();
+    widget = buildWidget(data);
+  } catch (error) {
+    console.error(`Widget failed: ${error}`);
+    widget = buildErrorWidget("Unable to load workout data.");
+  }
+
+  if (config.runsInWidget) {
+    Script.setWidget(widget);
+  } else {
+    // Running inside the Scriptable app — show a preview at the real size.
+    await widget.presentLarge();
+  }
+
+  Script.complete();
+}
+
+await main();
