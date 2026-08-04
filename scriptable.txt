@@ -3,20 +3,48 @@
 // icon-color: red; icon-glyph: dumbbell;
 //
 // ============================================================================
-// Today's Workout — a large widget for the iOS Scriptable app
+// Today's Workout — a home-screen widget for the iOS Scriptable app
 // ============================================================================
 //
 // Shows today's steps, push-ups and leg raises against their goals, with a
 // coloured progress bar for each, the current streak, and a motivational line.
+// Small, Medium and Large are all supported — the layout changes shape rather
+// than just shrinking, because a Large layout scaled into a Small widget is
+// unreadable.
 //
 // SETUP
 //   1. Scriptable → + → paste this whole file.
 //   2. Set API_KEY in the CONFIG block below to the same value as the
 //      WORKOUT_API_KEY environment variable on the server. Nothing else needs
 //      to change.
-//   3. Long-press the home screen → add a Scriptable widget → size Large →
-//      choose this script. Optionally set the widget's "Parameter" field to
-//      `p1` or `p2` to pick the athlete for that specific widget.
+//   3. Long-press the home screen → add a Scriptable widget → any size →
+//      choose this script.
+//
+// WIDGET PARAMETER (optional)
+//   The widget's "Parameter" field takes a comma-separated list of tokens, in
+//   any order, and each one overrides a CONFIG value for that widget only:
+//
+//     p1 | p2                which athlete to show
+//     small | medium | large force a layout (otherwise the real size is used)
+//     dark | clear           force an appearance — see APPEARANCE below
+//
+//   e.g. `p1, clear` — Abby's numbers, glass styling, size taken from iOS.
+//
+// ON CLEAR / TINTED ICONS
+//   When the home screen uses the Clear or Tinted icon style, iOS applies its
+//   own treatment to widgets, and a script cannot read or opt out of it — there
+//   is no API that reports the icon style, so `APPEARANCE` is a manual switch
+//   rather than something detected.
+//
+//   What this file controls is the artwork underneath: `APPEARANCE = "clear"`
+//   drops the solid black slab, which is what looks like a hole punched through
+//   a glass home screen, for a thin translucent scrim with shadowed text. It
+//   degrades safely — if the platform composites it over an opaque background
+//   instead of the wallpaper, it just reads as a lighter card.
+//
+//   The layouts also avoid depending on colour alone: each exercise carries an
+//   emoji and a label as well as a hue, so three bars stay distinguishable if
+//   the system desaturates them.
 //
 // ON ANIMATION
 //   iOS home-screen widgets are static snapshots rendered by WidgetKit. Neither
@@ -51,20 +79,68 @@ const TAP_URL = "https://www.dragomir.xyz";
 /** How long before iOS is asked to refresh again. It treats this as a hint. */
 const REFRESH_MINUTES = 15;
 
+/**
+ * Which layout to preview when you run the script by hand in the app, where
+ * there's no real widget and so no `config.widgetFamily`. "small" | "medium" |
+ * "large" — or override per-run with the Parameter field.
+ */
+const PREVIEW_SIZE = "large";
+
+/**
+ * Appearance: "dark" | "clear".
+ *
+ * "clear" is for home screens using the Clear (or tinted) icon style, where a
+ * solid black card reads as a hole punched through the glass. Override per-run
+ * with the Parameter field, e.g. `p2, medium, clear`.
+ *
+ * This can't be detected: nothing in Scriptable or WidgetKit reports the user's
+ * icon style to a widget, so it has to be a manual switch.
+ */
+const APPEARANCE = "dark";
+
 // ---------------------------------------------------------------------------
 // Design tokens — Apple Fitness-flavoured dark theme
 // ---------------------------------------------------------------------------
 
-const THEME = {
-  bg: new Color("#111111"),
-  bgGradientTo: new Color("#1C1C1E"),
-  card: new Color("#1C1C1E"),
-  track: new Color("#2C2C2E"),
-  text: Color.white(),
-  textDim: new Color("#8E8E93"),
-  streak: new Color("#FF9F0A"),
-  success: new Color("#30D158"),
-};
+/**
+ * Colours for one appearance.
+ *
+ * The clear variant keeps a light scrim rather than going fully transparent.
+ * Fully transparent looks great over a dark wallpaper and becomes unreadable
+ * over a bright one; a ~20% black wash costs almost no translucency and keeps
+ * white text legible over anything. Its dim text and track are white-based
+ * alphas for the same reason — a fixed grey like #8E8E93 disappears against a
+ * mid-tone photo.
+ */
+function themeFor(appearance) {
+  if (appearance === "clear") {
+    return {
+      clear: true,
+      bg: new Color("#000000", 0.2),
+      bgGradientTo: new Color("#000000", 0.34),
+      card: new Color("#FFFFFF", 0.15),
+      track: new Color("#FFFFFF", 0.26),
+      text: Color.white(),
+      textDim: new Color("#FFFFFF", 0.75),
+      streak: new Color("#FFB340"),
+      success: new Color("#4AE168"),
+    };
+  }
+  return {
+    clear: false,
+    bg: new Color("#111111"),
+    bgGradientTo: new Color("#1C1C1E"),
+    card: new Color("#1C1C1E"),
+    track: new Color("#2C2C2E"),
+    text: Color.white(),
+    textDim: new Color("#8E8E93"),
+    streak: new Color("#FF9F0A"),
+    success: new Color("#30D158"),
+  };
+}
+
+/** Resolved in main() once the Parameter field has been read. */
+let THEME = themeFor(APPEARANCE);
 
 /** One entry per exercise, in display order. Colours are Apple's dark palette. */
 const EXERCISES = [
@@ -142,10 +218,49 @@ function deviceTimeZone() {
   }
 }
 
+/** Widget "Parameter" field split into tokens, e.g. `p1, small` → ["p1","small"]. */
+function parameterTokens() {
+  return String(args.widgetParameter || "")
+    .toLowerCase()
+    .split(/[,\s]+/)
+    .filter(Boolean);
+}
+
 /** "p1"/"p2" from the widget's Parameter field, else the PERSON constant. */
 function resolvePerson() {
-  const p = (args.widgetParameter || "").trim();
-  return p === "p1" || p === "p2" ? p : PERSON;
+  const tokens = parameterTokens();
+  if (tokens.indexOf("p1") !== -1) return "p1";
+  if (tokens.indexOf("p2") !== -1) return "p2";
+  return PERSON;
+}
+
+/**
+ * Which of the three layouts to build.
+ *
+ * `config.widgetFamily` is set only while iOS is rendering a real home-screen
+ * widget; running the script by hand in the app leaves it undefined. A size
+ * token in the Parameter field therefore wins — that's also how you preview the
+ * small and medium layouts without adding them to the home screen first.
+ */
+function resolveFamily() {
+  const tokens = parameterTokens();
+  if (tokens.indexOf("small") !== -1) return "small";
+  if (tokens.indexOf("medium") !== -1) return "medium";
+  if (tokens.indexOf("large") !== -1) return "large";
+
+  const family = config.widgetFamily;
+  if (family === "small" || family === "medium" || family === "large") return family;
+  // extraLarge (iPad) and any future family get the large layout, which has the
+  // most room and scales up without clipping.
+  return family ? "large" : PREVIEW_SIZE;
+}
+
+/** "dark"/"clear" from the Parameter field, else the APPEARANCE constant. */
+function resolveAppearance() {
+  const tokens = parameterTokens();
+  if (tokens.indexOf("clear") !== -1) return "clear";
+  if (tokens.indexOf("dark") !== -1) return "dark";
+  return APPEARANCE;
 }
 
 // ---------------------------------------------------------------------------
@@ -303,13 +418,27 @@ function ring(percent, hex, size = 54, lineWidth = 6) {
     dc.strokePath();
   }
 
-  // Centre label.
-  dc.setFont(Font.boldSystemFont(15));
+  // Centre label, sized from the ring so it stays proportional across families.
+  const labelFont = Math.max(10, Math.round(size * 0.27));
+  dc.setFont(Font.boldSystemFont(labelFont));
   dc.setTextColor(THEME.text);
   dc.setTextAlignedCenter();
-  dc.drawTextInRect(`${Math.round(clamped)}%`, new Rect(0, center - 11, size, 22));
+  dc.drawTextInRect(
+    `${Math.round(clamped)}%`,
+    new Rect(0, center - labelFont * 0.72, size, labelFont * 1.5),
+  );
 
   return dc.getImage();
+}
+
+/** The overall-progress ring as a widget image, with its clear-mode shadow. */
+function addRing(stack, model, size, lineWidth) {
+  const image = stack.addImage(
+    ring(model.overall, model.allComplete ? "#30D158" : "#0A84FF", size, lineWidth),
+  );
+  image.imageSize = new Size(size, size);
+  shadow(image);
+  return image;
 }
 
 // ---------------------------------------------------------------------------
@@ -317,7 +446,7 @@ function ring(percent, hex, size = 54, lineWidth = 6) {
 // ---------------------------------------------------------------------------
 
 /** Shared chrome: background gradient, padding, tap target, refresh hint. */
-function baseWidget() {
+function baseWidget(family) {
   const w = new ListWidget();
 
   const gradient = new LinearGradient();
@@ -326,23 +455,46 @@ function baseWidget() {
   w.backgroundGradient = gradient;
   w.backgroundColor = THEME.bg;
 
-  w.setPadding(16, 16, 14, 16);
+  // Smaller widgets get tighter margins — 16pt of padding costs a Small widget
+  // a fifth of its width.
+  const pad = family === "small" ? 12 : family === "medium" ? 14 : 16;
+  w.setPadding(pad, pad, pad - 2, pad);
+
   w.refreshAfterDate = new Date(Date.now() + REFRESH_MINUTES * 60 * 1000);
   if (TAP_URL) w.url = TAP_URL;
 
   return w;
 }
 
-/** Adds "Last Updated: HH:mm", pinned to the bottom. */
-function addFooter(w) {
-  w.addSpacer();
-  const footer = w.addText(`Last Updated: ${nowHHmm()}`);
-  footer.font = Font.systemFont(10);
-  footer.textColor = THEME.textDim;
-  footer.centerAlignText();
+/**
+ * A soft drop shadow, applied only in clear mode. Returns the element so it can
+ * wrap a call: `shadow(stack.addText("…"))`.
+ *
+ * Translucent styling puts white text and thin artwork over a wallpaper nobody
+ * can predict. A shadow keeps both readable over a bright one without darkening
+ * the scrim to the point that the glass effect is lost.
+ */
+function shadow(element) {
+  if (!THEME.clear) return element;
+  element.shadowColor = new Color("#000000", 0.55);
+  element.shadowOffset = new Point(0, 1);
+  element.shadowRadius = 3;
+  return element;
 }
 
-/** One exercise: title row, bar, then percentage and what's left. */
+/** Adds the "last updated" stamp, pinned to the bottom. */
+function addFooter(w, family) {
+  w.addSpacer();
+  // A Small widget has no room for the label, and the time alone still answers
+  // the only question the footer exists to answer: is this stale?
+  const footer = w.addText(family === "small" ? nowHHmm() : `Last Updated: ${nowHHmm()}`);
+  footer.font = Font.systemFont(family === "small" ? 9 : 10);
+  footer.textColor = THEME.textDim;
+  footer.centerAlignText();
+  shadow(footer);
+}
+
+/** Large: title row, full-width bar, then percentage and what's left. */
 function exerciseRow(w, row) {
   const container = w.addStack();
   container.layoutVertically();
@@ -360,6 +512,7 @@ function exerciseRow(w, row) {
   const label = head.addText(row.label);
   label.font = Font.semiboldSystemFont(13);
   label.textColor = THEME.text;
+  shadow(label);
 
   if (row.done) {
     const check = head.addText("✅");
@@ -371,11 +524,13 @@ function exerciseRow(w, row) {
   const value = head.addText(`${fmt(row.value)} / ${fmt(row.goal)}`);
   value.font = Font.mediumSystemFont(12);
   value.textColor = THEME.textDim;
+  shadow(value);
 
   // Bar.
-  const bar = container.addImage(progressBar(row.percent, row.color));
+  const bar = container.addImage(progressBar(row.percent, row.color, 300, 10));
   bar.imageSize = new Size(300, 10);
   bar.applyFittingContentMode();
+  shadow(bar);
 
   // Percentage + remaining.
   const meta = container.addStack();
@@ -384,6 +539,7 @@ function exerciseRow(w, row) {
   const percentText = meta.addText(`${Math.round(row.percent)}%`);
   percentText.font = Font.semiboldSystemFont(11);
   percentText.textColor = new Color(row.color);
+  shadow(percentText);
 
   meta.addSpacer();
 
@@ -392,6 +548,102 @@ function exerciseRow(w, row) {
   );
   remaining.font = Font.systemFont(11);
   remaining.textColor = THEME.textDim;
+  shadow(remaining);
+}
+
+/**
+ * Medium: label and value share one line, with the bar beneath.
+ *
+ * The "x to go" line from the Large layout is dropped — the bar and the
+ * `72 / 100` already say it, and a Medium widget doesn't have the height.
+ */
+function compactRow(stack, row, barWidth) {
+  const container = stack.addStack();
+  container.layoutVertically();
+  container.spacing = 3;
+
+  const head = container.addStack();
+  head.layoutHorizontally();
+  head.centerAlignContent();
+  head.spacing = 4;
+
+  const icon = head.addText(row.icon);
+  icon.font = Font.systemFont(11);
+
+  const label = head.addText(row.done ? `${row.label} ✅` : row.label);
+  label.font = Font.semiboldSystemFont(11);
+  label.textColor = THEME.text;
+  label.lineLimit = 1;
+  label.minimumScaleFactor = 0.8;
+  shadow(label);
+
+  head.addSpacer();
+
+  const value = head.addText(`${fmt(row.value)} / ${fmt(row.goal)}`);
+  value.font = Font.mediumSystemFont(11);
+  value.textColor = THEME.textDim;
+  value.lineLimit = 1;
+  value.minimumScaleFactor = 0.8;
+  shadow(value);
+
+  const bar = container.addImage(progressBar(row.percent, row.color, barWidth, 6));
+  bar.imageSize = new Size(barWidth, 6);
+  bar.applyFittingContentMode();
+  shadow(bar);
+}
+
+/**
+ * Small: icon, bar, percentage — one line each.
+ *
+ * At 158pt wide there's no room for a label as well as a number, so the emoji
+ * carries the identity. That also survives iOS's tinted rendering better than
+ * colour alone does, since three bars that differ only by hue become three
+ * identical bars once the system desaturates them.
+ */
+function miniRow(stack, row, barWidth) {
+  const line = stack.addStack();
+  line.layoutHorizontally();
+  line.centerAlignContent();
+  line.spacing = 4;
+
+  const icon = line.addText(row.icon);
+  icon.font = Font.systemFont(10);
+
+  const bar = line.addImage(progressBar(row.percent, row.color, barWidth, 6));
+  bar.imageSize = new Size(barWidth, 6);
+  bar.applyFittingContentMode();
+  shadow(bar);
+
+  line.addSpacer();
+
+  const percentText = line.addText(`${Math.round(row.percent)}%`);
+  percentText.font = Font.semiboldSystemFont(10);
+  percentText.textColor = new Color(row.color);
+  percentText.lineLimit = 1;
+  shadow(percentText);
+}
+
+/** 🔥 + count + "day streak", stacked vertically. Used by Medium and Small. */
+function streakBadge(stack, model, compact) {
+  const line = stack.addStack();
+  line.layoutHorizontally();
+  line.centerAlignContent();
+  line.spacing = 3;
+
+  const flame = line.addText("🔥");
+  flame.font = Font.systemFont(compact ? 12 : 15);
+
+  const count = line.addText(String(model.streak));
+  count.font = Font.boldSystemFont(compact ? 13 : 17);
+  count.textColor = THEME.streak;
+  shadow(count);
+
+  if (!compact) {
+    const label = line.addText("days");
+    label.font = Font.systemFont(10);
+    label.textColor = THEME.textDim;
+    shadow(label);
+  }
 }
 
 /** The streak badge and motivational line, side by side. */
@@ -415,10 +667,12 @@ function addStreakAndMessage(w, model) {
   const count = streakBlock.addText(String(model.streak));
   count.font = Font.boldSystemFont(22);
   count.textColor = THEME.streak;
+  shadow(count);
 
   const streakLabel = streakBlock.addText("day streak");
   streakLabel.font = Font.systemFont(10);
   streakLabel.textColor = THEME.textDim;
+  shadow(streakLabel);
 
   strip.addSpacer();
 
@@ -428,12 +682,12 @@ function addStreakAndMessage(w, model) {
   message.rightAlignText();
   message.lineLimit = 2;
   message.minimumScaleFactor = 0.8;
+  shadow(message);
 }
 
-/** The full widget for a successful fetch. */
-function buildWidget(data) {
-  const model = toViewModel(data);
-  const w = baseWidget();
+/** Large: header with ring, three full rows, streak strip, footer. */
+function buildLarge(model) {
+  const w = baseWidget("large");
 
   // Header: title (+ trophy) and subtitle on the left, overall ring on the right.
   const header = w.addStack();
@@ -454,6 +708,7 @@ function buildWidget(data) {
   title.textColor = THEME.text;
   title.lineLimit = 1;
   title.minimumScaleFactor = 0.8;
+  shadow(title);
 
   // Bonus: trophy once every goal is met.
   if (model.allComplete) {
@@ -469,13 +724,11 @@ function buildWidget(data) {
   subtitle.font = Font.systemFont(11);
   subtitle.textColor = THEME.textDim;
   subtitle.lineLimit = 1;
+  shadow(subtitle);
 
   header.addSpacer();
 
-  const overallRing = header.addImage(
-    ring(model.overall, model.allComplete ? "#30D158" : "#0A84FF"),
-  );
-  overallRing.imageSize = new Size(54, 54);
+  addRing(header, model, 54, 6);
 
   w.addSpacer(14);
 
@@ -487,9 +740,141 @@ function buildWidget(data) {
 
   w.addSpacer(13);
   addStreakAndMessage(w, model);
-  addFooter(w);
+  addFooter(w, "large");
 
   return w;
+}
+
+/**
+ * Medium: two columns — the three exercises on the left, ring and streak on the
+ * right — because Medium is short and wide, and stacking the Large layout's
+ * blocks vertically would clip the third exercise.
+ */
+function buildMedium(model) {
+  const w = baseWidget("medium");
+
+  const body = w.addStack();
+  body.layoutHorizontally();
+
+  // Left: title, subtitle, then the three compact rows.
+  const left = body.addStack();
+  left.layoutVertically();
+  left.spacing = 0;
+
+  const titleRow = left.addStack();
+  titleRow.layoutHorizontally();
+  titleRow.centerAlignContent();
+  titleRow.spacing = 4;
+
+  const title = titleRow.addText("Today's Workout");
+  title.font = Font.boldSystemFont(14);
+  title.textColor = THEME.text;
+  title.lineLimit = 1;
+  title.minimumScaleFactor = 0.8;
+  shadow(title);
+
+  if (model.allComplete) {
+    const trophy = titleRow.addText("🏆");
+    trophy.font = Font.systemFont(12);
+  }
+
+  // The name shares the title's line, and the date is dropped entirely: Medium
+  // is 158pt tall, and a second header line costs one of the three exercises.
+  // A widget captioned "Today" doesn't need to spell the date out, and the
+  // footer already timestamps it.
+  titleRow.addSpacer();
+
+  if (model.name) {
+    const who = titleRow.addText(model.name);
+    who.font = Font.systemFont(10);
+    who.textColor = THEME.textDim;
+    who.lineLimit = 1;
+    shadow(who);
+  }
+
+  left.addSpacer(6);
+
+  model.rows.forEach((row, i) => {
+    if (i > 0) left.addSpacer(5);
+    compactRow(left, row, 196);
+  });
+
+  body.addSpacer(10);
+
+  // Right: overall ring above the streak.
+  const right = body.addStack();
+  right.layoutVertically();
+  right.centerAlignContent();
+  right.spacing = 6;
+
+  addRing(right, model, 58, 6);
+  streakBadge(right, model, false);
+
+  const message = right.addText(motivation(model.overall, model.allComplete));
+  message.font = Font.semiboldSystemFont(10);
+  message.textColor = model.allComplete ? THEME.success : THEME.textDim;
+  message.centerAlignText();
+  message.lineLimit = 2;
+  message.minimumScaleFactor = 0.7;
+  shadow(message);
+
+  addFooter(w, "medium");
+
+  return w;
+}
+
+/**
+ * Small: overall ring, streak, and three icon-and-bar rows.
+ *
+ * Everything that needs a sentence is dropped — the motivational line, the
+ * date, the "to go" counts. What's left is what a Small widget is actually
+ * glanced at for: am I on track, and is the streak alive.
+ */
+function buildSmall(model) {
+  const w = baseWidget("small");
+
+  const head = w.addStack();
+  head.layoutHorizontally();
+  head.centerAlignContent();
+
+  const title = head.addText(model.allComplete ? "Today 🏆" : "Today");
+  title.font = Font.boldSystemFont(13);
+  title.textColor = THEME.text;
+  title.lineLimit = 1;
+  shadow(title);
+
+  head.addSpacer();
+  streakBadge(head, model, true);
+
+  w.addSpacer(4);
+
+  // The ring gets its own centred row so it isn't left-aligned under the title.
+  const ringRow = w.addStack();
+  ringRow.layoutHorizontally();
+  ringRow.addSpacer();
+  addRing(ringRow, model, 54, 6);
+  ringRow.addSpacer();
+
+  w.addSpacer(6);
+
+  model.rows.forEach((row, i) => {
+    if (i > 0) w.addSpacer(4);
+    // 78pt leaves room for a three-digit "100%" on a 4.7" phone, where a Small
+    // widget is only ~141pt wide.
+    miniRow(w, row, 78);
+  });
+
+  addFooter(w, "small");
+
+  return w;
+}
+
+/** The widget for a successful fetch, in whichever layout the family calls for. */
+function buildWidget(data, family) {
+  const model = toViewModel(data);
+  if (family === "small") return buildSmall(model);
+  if (family === "medium") return buildMedium(model);
+  return buildLarge(model);
 }
 
 /**
@@ -499,8 +884,9 @@ function buildWidget(data) {
  * run by hand inside the app — a home-screen widget shows the plain message.
  * Diagnosing a widget you can't put a breakpoint in is otherwise guesswork.
  */
-function buildErrorWidget(message, detail) {
-  const w = baseWidget();
+function buildErrorWidget(message, detail, family) {
+  const small = family === "small";
+  const w = baseWidget(family);
 
   w.addSpacer();
 
@@ -508,27 +894,32 @@ function buildErrorWidget(message, detail) {
   center.layoutVertically();
   center.centerAlignContent();
 
-  const title = center.addText("Today's Workout");
-  title.font = Font.boldSystemFont(19);
+  const title = center.addText(small ? "Today" : "Today's Workout");
+  title.font = Font.boldSystemFont(small ? 13 : 19);
   title.textColor = THEME.text;
   title.centerAlignText();
+  title.lineLimit = 1;
+  shadow(title);
 
-  center.addSpacer(10);
+  center.addSpacer(small ? 6 : 10);
 
   const icon = center.addText("⚠️");
-  icon.font = Font.systemFont(28);
+  icon.font = Font.systemFont(small ? 22 : 28);
   icon.centerAlignText();
 
-  center.addSpacer(8);
+  center.addSpacer(small ? 6 : 8);
 
-  const text = center.addText(message);
-  text.font = Font.mediumSystemFont(14);
+  // "Unable to load workout data." won't fit a Small widget at a readable size.
+  const text = center.addText(small ? "No data" : message);
+  text.font = Font.mediumSystemFont(small ? 11 : 14);
   text.textColor = THEME.textDim;
   text.centerAlignText();
-  text.lineLimit = 3;
+  text.lineLimit = small ? 2 : 3;
   text.minimumScaleFactor = 0.85;
+  shadow(text);
 
-  if (detail) {
+  // The detail is a raw error string; there's nowhere to put it on a Small.
+  if (detail && !small) {
     center.addSpacer(8);
     const hint = center.addText(String(detail));
     hint.font = Font.systemFont(10);
@@ -536,9 +927,10 @@ function buildErrorWidget(message, detail) {
     hint.centerAlignText();
     hint.lineLimit = 4;
     hint.minimumScaleFactor = 0.7;
+    shadow(hint);
   }
 
-  addFooter(w);
+  addFooter(w, family);
   return w;
 }
 
@@ -547,11 +939,16 @@ function buildErrorWidget(message, detail) {
 // ---------------------------------------------------------------------------
 
 async function main() {
+  // Both depend on the Parameter field, so they're resolved before anything is
+  // drawn — every builder below reads THEME.
+  const family = resolveFamily();
+  THEME = themeFor(resolveAppearance());
+
   let widget;
 
   try {
     const data = await loadData();
-    widget = buildWidget(data);
+    widget = buildWidget(data, family);
   } catch (error) {
     console.error(`Widget failed: ${error}`);
     // The detail is suppressed on the home screen, where the brief message is
@@ -559,14 +956,17 @@ async function main() {
     widget = buildErrorWidget(
       "Unable to load workout data.",
       config.runsInWidget ? null : String(error),
+      family,
     );
   }
 
   if (config.runsInWidget) {
     Script.setWidget(widget);
   } else {
-    // Running inside the Scriptable app — show a preview at the real size.
-    await widget.presentLarge();
+    // Running inside the Scriptable app — preview at the size being built.
+    if (family === "small") await widget.presentSmall();
+    else if (family === "medium") await widget.presentMedium();
+    else await widget.presentLarge();
   }
 
   Script.complete();
